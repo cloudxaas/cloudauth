@@ -1,0 +1,3 @@
+openssl req -new -key ssh_host_rsa_key -out ssh_host_rsa_key.csr
+
+openssl x509 -req -days 3650 -in ssh_host_rsa_key.csr -signkey ssh_host_rsa_key -out ssh_host_rsa_key.crt

@@ -1,0 +1,166 @@
+"""
+
+-------------------
+Protocol definition
+-------------------
+
+Client->Agent: please identify and assert my authenticity, also sign my ctx, the secrets 
+               will be using, also give back or store my authz-tkns please
+
+{
+    #BEGIN authN request [All optional except 1st]
+
+    "authn-tkn" : [ # authn_tkn type, mandatory, any combination of "basic", "binary", "execution", "delegate", "sysctx"
+        "...",
+        "..."
+    ],
+
+    #binaries need to hash and sign, if "binary" auth is req'd 
+    "bin-hash" : [
+          "path/to/exe-1" : "",
+          "path/to/exe-2" : ""
+    ],
+
+    #environs need to retrieve and sign, if "execution" is req'd 
+    "env-list" : [
+          "name1" : "",
+          "name2" : ""
+    ],
+
+    #app-ctxs need to sign, optional
+    "app-ctx" : [
+          "name1" : "value2",
+          "name2" : "value2"
+    ],
+
+    #sys-ctxs need to retrieve and sign, if "sysctx" is req'd
+    "sys-ctx" : [
+          "name1" : ""
+          "name2" : ""
+    ],
+
+    #proxy ctx
+
+    "proxy-ctx" : [ # proxy with the following authn_tkn characteristics can act on my behalf
+        "app@host#user" : {
+          "authn_type: "..."
+          "assertion_strength" : "TPM", # TPM, HSM, PubK, SymK, 2F, ...
+          "srvs-list : [
+                {
+                    "srvs-id" : "app@host#user"
+                    "srvs-proxy-ctx" : {
+                        # srvs-proxy context specific to service   
+                    }
+                }
+          ]  
+        }
+    ]
+
+
+    #END authN request [All optional]
+
+    #Sign my public keys if you will
+    "key-sign" : [
+          {
+               "algo" : "...",
+               "name" : "...",
+               "pubk" : "...",
+               "usage" : "..."
+          }
+    ],
+
+    #Sign my certs (csr) if you will
+    "cert-sign" : [
+          "csr" : "...",
+    ],
+
+    #AuthZ tkn storage you may provide
+    "authz-tkn" : [ 
+          # GET
+          [
+              "srvs-id" : "service-00",
+              "srvs-id" : "service-01",
+          ],
+          # PUT
+          {
+              "srvs-id" : "service-01",
+              "auth-tk" : "tkn-in-b64"
+          }
+    ]
+}
+
+Agent->Client: here's my assertion for you, together with your ctx signed
+
+{
+    # Authn-tkn cert/pubK accessible to all, hence not it's included
+    # Accessible via https from localhost or from local filesystem.
+
+    "authn-tkn" : [
+          "subj" : "app@host#user" 
+          "type" : [ # exactly as in req
+          ], 
+          "strength" : "TPM", # TPM, HSM, PubK, SymK, 2F, ...
+          "algo" : "sha1-rsa"
+          "authn-sig" : "b64 hash" of all three
+    ]
+
+    "bin-sig" : { 
+	    "bin-dir"  : "/home/jz/bin"
+	    "bin-hash" : "exe hex hash"
+        "bin-sig"  : "...."
+    },
+
+
+    "exe-sig" : {
+
+	    "cmd-arg  : "space seperated"
+
+   	    "env-list" : { # only if req'd
+             [
+                  "name1" : "value2"
+                  "name2" : "value2"
+             ],
+
+         "exe-sig" : "...."
+    },
+    
+    "app-ctx-sig" : "....", # only if requested
+
+    "sys-ctx-sig" : { # only if requested
+          [
+            "name1" : "value2"
+            "name2" : "value2"
+          ],
+          "sys-ctx-sig" : "....."
+    }
+
+    #proxy ctx
+
+    "proxy-sig" : [ 
+        "app1@host1#user1" : "sig1",
+        "app2@host2#user2" : "sig2"
+        }
+    ]
+
+    #
+    
+    "key-sign" : [
+          {
+               "pubk" : "...",
+               "sign" : "..."
+          }
+    ],
+
+    "cert-sign" : [
+          "cert" : "...",
+    ],
+
+    "authz-tkn" : [ 
+          {
+              "srvs-id" : "service-01",
+              "auth-tk" : "tkn-in-b64"
+          }
+    ]
+}
+
+"""
