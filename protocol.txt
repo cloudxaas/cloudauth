@@ -10,7 +10,7 @@ Client->Agent: please identify and assert my authenticity, also sign my ctx, the
 {
     #BEGIN authN request [All optional except 1st]
 
-    "authn-tkn" : [ # authn_tkn type, mandatory, any combination of "basic", "binary", "execution", "delegate", "sysctx"
+    "authn-tkn" : [ # authn_tkn type, mandatory, any combination of "basic", "binary", "execution", "proxyctx", "sysctx"
         "...",
         "..."
     ],
