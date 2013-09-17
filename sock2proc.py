@@ -18,7 +18,7 @@ class ProcInfo(object):
     euid = -1
     user = ""
     cmd = ""
-    arg = ""
+    arg = [] 
     env = {} 
     clnt = ""
     binh = ""
@@ -55,21 +55,21 @@ class ProcInfo(object):
         self.cmd = self.cmd.strip()
         fname.close()
 
-        if (len(self.cmd) != 0):
+        if (len(self.cmd) > 0):
              argv = self.cmd.split("\0")
-             logger.info("proc %s argv: %s", self.pid, argv)
              self.cmd = argv[0] 
              for i in range(1, len(argv)):
-                 self.arg += argv[i] + " "
-             self.arg = self.arg.strip(' ')
+                 arg = argv[i].strip()
+                 if (len(arg) > 0):
+                     self.arg.append(arg)
        
         #Special case where args part of command
-        #TODO bug if space in filename (escaping)
+        #TODO bug if space in filename (escaping handling)
         idx = self.cmd.find(" ")
         if (idx > 0):
-            self.arg += self.cmd[(idx + 1):].strip()
             self.cmd = self.cmd[:idx].strip()
- 
+            self.arg += self.cmd[(idx + 1):].split(" ")
+             
         logger.info("clnt exe: %s", self.cmd)
         logger.info("clnt arg: %s", self.arg)
 
