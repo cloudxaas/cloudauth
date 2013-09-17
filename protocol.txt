@@ -15,42 +15,46 @@ Client->Agent: please identify and assert my authenticity, also sign my ctx, the
         "..."
     ],
 
-    #binaries need to hash and sign, if "binary" auth is req'd 
+    #optional challenge from server, preferrable rand# + validity signed by server against replay
+    "challenge" : "...", 
+    
+    #extra binaries need to hash and sign, if "binary" auth is req'd 
     "bin-hash" : [
-          "path/to/exe-1" : "",
-          "path/to/exe-2" : ""
+         "path/to/exe-1" : "",
+         "path/to/exe-2" : ""
     ],
 
     #environs need to retrieve and sign, if "execution" is req'd 
     "env-list" : [
-          "name1" : "",
-          "name2" : ""
+         "name1" : "",
+         "name2" : ""
     ],
 
-    #app-ctxs need to sign, optional
+    #optional app-ctxs need to sign, possible for any authn type
     "app-ctx" : [
-          "name1" : "value2",
-          "name2" : "value2"
+         "name1" : "value2",
+         "name2" : "value2"
     ],
 
     #sys-ctxs need to retrieve and sign, if "sysctx" is req'd
     "sys-ctx" : [
-          "name1" : ""
-          "name2" : ""
+         "name1" : ""
+         "name2" : ""
     ],
 
     #proxy ctx
 
     "proxy-ctx" : [ # proxy with the following authn_tkn characteristics can act on my behalf
         "app@host#user" : {
-          "authn_type: "..."
-          "assertion_strength" : "TPM", # TPM, HSM, PubK, SymK, 2F, ...
+          "token_type: "..."
+          "authn_type" : "TPM", # TPM, HSM, PubK, SymK, 2F, ...
           "srvs-list : [
                 {
                     "srvs-id" : "app@host#user"
                     "srvs-proxy-ctx" : {
                         # srvs-proxy context specific to service   
-                    }
+                    },
+                    "transitive" : "false"
                 }
           ]  
         }
@@ -84,7 +88,8 @@ Client->Agent: please identify and assert my authenticity, also sign my ctx, the
           # PUT
           {
               "srvs-id" : "service-01",
-              "auth-tk" : "tkn-in-b64"
+              "authz-tk" : "tkn-in-b64"
+              "ttl" : "in seconds"
           }
     ]
 }
@@ -95,52 +100,62 @@ Agent->Client: here's my assertion for you, together with your ctx signed
     # Authn-tkn cert/pubK accessible to all, hence not it's included
     # Accessible via https from localhost or from local filesystem.
 
+    # Each *-sig is calculated (sha1WithRSAencryption) with its applicable
+    # items, the following two and challenge if prensented.
+
+    "sig_salt" : "....",
+    "validty"  : "from-to in seconds after unix epoc",  
+    
     "authn-tkn" : [
           "subj" : "app@host#user" 
-          "type" : [ # exactly as in req
-          ], 
-          "strength" : "TPM", # TPM, HSM, PubK, SymK, 2F, ...
-          "algo" : "sha1-rsa"
+          "token_type" : [ # exactly as in req
+          ],
+          "authn_type" : "TPM", # TPM, HSM, PubK, SymK, 2F, ...
+          "authn_algo" : "sha1-rsa"
           "authn-sig" : "b64 hash" of all three
     ]
 
     "bin-sig" : { 
-	    "bin-dir"  : "/home/jz/bin"
-	    "bin-hash" : "exe hex hash"
-        "bin-sig"  : "...."
+	  "bin-dir"  : "/home/jz/bin"
+	  "bin-hash" : "exe hex hash"
+          "path/to/exe-1" : "",
+          "path/to/exe-2" : ""
+          "bin-sig"  : "...."
     },
-
 
     "exe-sig" : {
 
-	    "cmd-arg  : "space seperated"
+	  "cmd-arg  : "space seperated"
 
-   	    "env-list" : { # only if req'd
-             [
+   	  "env-list" : { # only if req'd
+              [
                   "name1" : "value2"
                   "name2" : "value2"
-             ],
-
-         "exe-sig" : "...."
+              ],
+          "exe-sig" : "...."
     },
     
-    "app-ctx-sig" : "....", # only if requested
-
+    "app-ctx-sig" : {
+          "ctx-sig" : "....", # only if requested
+    },
+    
     "sys-ctx-sig" : { # only if requested
           [
-            "name1" : "value2"
-            "name2" : "value2"
+              "name1" : "value2"
+              "name2" : "value2"
           ],
+
           "sys-ctx-sig" : "....."
     }
 
     #proxy ctx
 
-    "proxy-sig" : [ 
-        "app1@host1#user1" : "sig1",
-        "app2@host2#user2" : "sig2"
-        }
-    ]
+    "proxy-sig" : {
+        [
+            "app1@host1#user1" : "sig1",
+            "app2@host2#user2" : "sig2"
+        ]
+    },
 
     #
     
