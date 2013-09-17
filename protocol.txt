@@ -105,57 +105,83 @@ Agent->Client: here's my assertion for you, together with your ctx signed
 
     "sig_salt" : "....",
     "validty"  : "from-to in seconds after unix epoc",  
+    "authn_type" : "TPM", # TPM, HSM, PubK, SymK, 2F, ...
+    "authn_algo" : "sha1-rsa"
+    "authn-sig" : "b64 hash" of all three
     
     "authn-tkn" : [
-          "subj" : "app@host#user" 
-          "token_type" : [ # exactly as in req
-          ],
-          "authn_type" : "TPM", # TPM, HSM, PubK, SymK, 2F, ...
-          "authn_algo" : "sha1-rsa"
-          "authn-sig" : "b64 hash" of all three
-    ]
 
-    "bin-sig" : { 
-	  "bin-hash" : "exe hex hash"
-          "path/to/exe-1" : "",
-          "path/to/exe-2" : ""
-          "bin-sig"  : "...."
-    },
+        "subject" : "app@host#user" 
+        
+        "bin-ctx" : { 
+	        "bin-hash" : "exe hex hash"
+            "path/to/exe-1" : "",
+            "path/to/exe-2" : ""
+        },
 
-    "exe-sig" : {
-	  "bin-dir"  : "/home/jz/bin"
-	  "cmd-arg  : "space seperated"
-          "cwd" : "/"
-          "root" : "/"
-   	  "env-list" : { # only if req'd
-              [
+        "exe-ctx" : {
+	          "bin-dir"  : "/home/jz/bin"
+	          "cmd-arg  : "space seperated"
+              "cwd" : "/"
+              "root" : "/"
+           	  "env-list" : [ # only if req'd
+                   "name1" : "value2"
+                   "name2" : "value2"
+              ],
+        },
+        
+        "app-ctx" : [ # exactly as requested
+             "name1" : "value2",
+             "name2" : "value2"
+        ],
+        
+        "sys-ctx" : [ # only if requested
+              
                   "name1" : "value2"
                   "name2" : "value2"
-              ],
-          "exe-sig" : "...."
-    },
-    
-    "app-ctx-sig" : {
-          "ctx-sig" : "....", # only if requested
-    },
-    
-    "sys-ctx-sig" : { # only if requested
-          [
-              "name1" : "value2"
-              "name2" : "value2"
-          ],
+        ]
 
-          "sys-ctx-sig" : "....."
-    }
+        "sig_salt" : "....",
+
+        "validty"  : "from-to in seconds after unix epoc",  
+
+        "authn_type" : "TPM", # TPM, HSM, PubK, SymK, 2F, ...
+
+        "authn_algo" : "sha1-rsa"
+
+        "authn-sig" : "b64 hash" of all three
+    ]
 
     #proxy ctx
 
-    "proxy-sig" : {
-        [
-            "app1@host1#user1" : "sig1",
-            "app2@host2#user2" : "sig2"
-        ]
-    },
+    "proxy-ctx-sig" : [ # proxy with the following authn_tkn characteristics can act on my behalf
+
+        "app@host#user" : {
+
+          "token_type: "..."
+          "authn_type" : "TPM", # TPM, HSM, PubK, SymK, 2F, ...
+          "srvs-list : [
+                {
+                    "srvs-id" : "app@host#user"
+                    "srvs-proxy-ctx" : {
+                        # srvs-proxy context specific to service   
+                    },
+                    "transitive" : "false"
+                }
+          ]
+            
+          "sig_salt" : "....",
+
+          "validty"  : "from-to in seconds after unix epoc",  
+
+          "authn_type" : "TPM", # TPM, HSM, PubK, SymK, 2F, ...
+
+          "authn_algo" : "sha1-rsa"
+
+          "authn-sig" : "b64 hash" of all three
+  
+        }
+    ]
 
     #
     
