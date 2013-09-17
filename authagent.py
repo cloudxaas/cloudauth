@@ -15,7 +15,7 @@ import tempfile
 import sock2proc
 import logging
 
-from socketserver import TCPServer, UnixStreamServer, ForkingMixIn, ForkingTCPServer
+from socketserver import TCPServer, UnixStreamServer, ThreadingMixIn, ThreadingTCPServer
 from http.server import SimpleHTTPRequestHandler
 from sock2proc import ProcInfo
 
@@ -54,12 +54,12 @@ class HttpsThread (threading.Thread):
 
         if (self.isTCP):         
 
-            class MyForkingTCPServer(ForkingTCPServer):
+            class MyThreadingTCPServer(ThreadingTCPServer):
                  def server_bind(self):
                      self.socket.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
                      self.socket.bind(self.server_address)
 
-            httpd = MyForkingTCPServer(("", self.port), handler) #TODO "" -> localhost
+            httpd = MyThreadingTCPServer(("", self.port), handler) #TODO "" -> localhost
 
             httpd.socket = ssl.wrap_socket (httpd.socket, keyfile='./ssh_host_rsa_key', certfile='./ssh_host_rsa_key.crt', server_side=True)
  
@@ -67,8 +67,8 @@ class HttpsThread (threading.Thread):
 
             if (os.path.exists(self.port)):
                 os.unlink(self.port)
-            class ForkingUsServer(ForkingMixIn, UnixStreamServer): pass
-            httpd = ForkingUsServer(self.port, handler)
+            class ThreadingUsServer(ThreadingMixIn, UnixStreamServer): pass
+            httpd = ThreadingUsServer(self.port, handler)
 
         logger.info("serving at port %s", self.port) 
 
