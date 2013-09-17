@@ -116,7 +116,6 @@ Agent->Client: here's my assertion for you, together with your ctx signed
     ]
 
     "bin-sig" : { 
-	  "bin-dir"  : "/home/jz/bin"
 	  "bin-hash" : "exe hex hash"
           "path/to/exe-1" : "",
           "path/to/exe-2" : ""
@@ -124,9 +123,10 @@ Agent->Client: here's my assertion for you, together with your ctx signed
     },
 
     "exe-sig" : {
-
+	  "bin-dir"  : "/home/jz/bin"
 	  "cmd-arg  : "space seperated"
-
+          "cwd" : "/"
+          "root" : "/"
    	  "env-list" : { # only if req'd
               [
                   "name1" : "value2"

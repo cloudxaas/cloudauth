@@ -24,6 +24,9 @@ class ProcInfo(object):
     binh = ""
     bindir = ""   
 
+    cwd = "/"
+    root = "/"
+
     # Either sock (local tcp) or pid/euid (unix stream) must be present
     def __init__(self, sock = -1, pid = -1, euid = -1):
         self.sock = sock
@@ -97,6 +100,9 @@ class ProcInfo(object):
              self.env[nv[0].strip()] = nv[1].strip()
     
         logger.info("clnt env: %s", self.env)
+        
+        self.cwd = os.path.realpath("/proc/" + self.pid + "/cwd")
+        self.root = os.path.realpath("/proc/" + self.pid + "/root")
              
         return True
 
