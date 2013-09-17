@@ -19,7 +19,7 @@ class ProcInfo(object):
     user = ""
     cmd = ""
     arg = ""
-    env = ""
+    env = {} 
     clnt = ""
     binh = ""
     bindir = ""   
@@ -85,11 +85,19 @@ class ProcInfo(object):
         logger.info("clnt exe hash: %s",self.binh) 
 
         fname = open("/proc/" + self.pid + "/environ", "r")
-        self.env = fname.readline()
+        envlist = fname.readline()
         fname.close()
-        self.env = self.env.replace("\0", "\n").strip()
-        logger.info("clnt env: %s", self.env)
 
+        envlist = envlist.split("\0")
+
+        for i in range(0, len(envlist)) :
+             nv = envlist[i].split("=", 2)
+             if (len(nv[0]) == 0):
+                 break
+             self.env[nv[0].strip()] = nv[1].strip()
+    
+        logger.info("clnt env: %s", self.env)
+             
         return True
 
     # Find the inode of a local sock address    
