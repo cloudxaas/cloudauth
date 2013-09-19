@@ -1,5 +1,25 @@
 """
 
+------------
+Random Notes
+------------
+
+- normally the service/proxy must check the remote address of the socket to match its assertion, when behind the NAT,it would not work because the IP is changed - relaxing the address check and rely on host public key in this case.
+
+Reauthentication: if the token expires or so demanded by the service or authorization service.
+
+Q: how to make the token non-transferable? if not behind NAT, check remote address and match host of app@host#user. If behind NAT, how??? SSL mutual cert authentication so that its not possible to reuse the token, this way the server is sure the connection originated from the client.
+
+----------
+Delegation
+----------
+
+Delegation - make the token transferable in a controlled manner:
+
+- client generates a random # & its timestamp, encrypted that with the delegate and the service's public key, sent as part of the assertion
+- delegate, as part of its assertion, must have the random # +1 and timestamp+1 encrypted with the service's public k
+
+
 -------------------
 Protocol definition
 -------------------
