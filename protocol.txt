@@ -8,7 +8,7 @@ Random Notes
 
 Reauthentication: if the token expires or so demanded by the service or authorization service.
 
-Q: how to make the token non-transferable? if not behind NAT, check remote address and match host of app@host#user. If behind NAT, how??? SSL mutual cert authentication so that its not possible to reuse the token, this way the server is sure the connection originated from the client.
+Q: how to make the token non-transferable? if not behind NAT, check remote address and match host of app@host#user. If behind NAT, how??? SSL mutual cert authentication so that its not possible to reuse the token, this way the server is sure the connection originated from the client. Or, a simple solution: server generates a random # encrypt it with its timestamp using client's public key, the client return with (random#+1 & timestamp+1) encrypted with server public key, then server can verify. In it's initial assertion, the client may suggest server challenge if non-transferability is important, after server receives the assertion prohibiting transfering, it would first check remote address and if mismatch (with NAT), issue challenge.
 
 ----------
 Delegation
@@ -16,8 +16,8 @@ Delegation
 
 Delegation - make the token transferable in a controlled manner:
 
-- client generates a random # & its timestamp, encrypted that with the delegate and the service's public key, sent as part of the assertion
-- delegate, as part of its assertion, must have the random # +1 and timestamp+1 encrypted with the service's public k
+- client generates a challenge (random # & its timestamp), encrypted that with the delegate and the service's public key, sent as part of the assertion
+- delegate, as part of its assertion, must have the (random # +1 and timestamp+1) encrypted with the service's public key, server can compare after receiving both.
 
 
 -------------------
