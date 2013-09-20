@@ -20,41 +20,45 @@
     Version="2.0"
     IssueInstant="2005-01-31T12:00:00Z">
     
-    <saml:Issuer>https://idp.y.c/</saml:Issuer>
+    <saml:Issuer Format="app@host#user">https://idp.y.c/</saml:Issuer>
 
     <!-- signature of the assertion -->
     <ds.Signature>....</ds.Signature>
     
     <saml:Subject>
-        <saml:NameID>app@host#user</saml:NameID>
-        <!-- info on how subject is verified -->
+        <saml:NameID Format="app@host#user">app@host#user</saml:NameID>
+        <!-- info on how subject is verified: transport or key/challenge  -->
         <saml:SubjectConfirmation
            Method="urn:oasis:names:tc:SAML:2.0:cm:bearer">
-           <saml:SubjectConfirmationData
-                InResponseTo="aaf23196-1773-2113-474a-fe114412ab72"
-                Recipient="https://sp.example.com/SAML2/SSO/POST"
-                NotOnOrAfter="2004-12-05T09:27:05"
-                Address="host fqdn or ip"/>
+           <saml:SubjectConfirmationData Address="host fqdn or ip">
+		<ds:KeyInfo></ds:KeyInfo>
+           </saml:SubjectConfirmationData>
         </saml:SubjectConfirmation>
     </saml:Subject>
 
     <saml:Conditions
         NotBefore="2005-01-31T12:00:00Z"
         NotOnOrAfter="2005-01-31T12:10:00Z">
+
+        <saml:OneTimeUse/>
+
         <!-- who can proxy this assertion -->
-        <saml:ProxyRestriction>
+        <saml:ProxyRestriction count="1">
             <saml:Audience>https://px.example.com/SAML2</saml:Audience>
         </saml:ProxyRestriction>
         <!-- who this assertion is intended -->
         <saml:AudienceRestriction>
-           <saml:Audience>https://sp.example.com/SAML2</saml:Audience>
+           <saml:Audience Format="app@host#user">srvs-a@jzsrv.y.c#jz</saml:Audience>
         </saml:AudienceRestriction>
     </saml:Conditions>
 
     <saml:AuthnStatement
-        AuthnInstant="2005-01-31T12:00:00Z" SessionIndex="67775277772">
+        AuthnInstant="2005-01-31T12:00:00Z">
+        <saml:SubjectLocality Address="1.1.1.1" DNSName="jz.yahoo.com"/>
         <saml:AuthnContext>
             <saml:AuthnContextClassRef>urn:oasis:names:tc:SAML:2.0:ac:classes:PasswordProtectedTransport</saml:AuthnContextClassRef>
+        <saml:AuthenticatingAuthority/>
+        </saml:AuthenticatingAuthority>
         </saml:AuthnContext>
     </saml:AuthnStatement>
 
@@ -68,20 +72,20 @@
         </saml:Attribute>
 
         <saml:Attribute Name="rt-ctx">
-            <saml:AttributeValue xsi:type="xs:string" subname="bin-dir">......</saml:AttributeValue>
-            <saml:AttributeValue xsi:type="xs:string" subname="cmdargs">......</saml:AttributeValue>
-            <saml:AttributeValue xsi:type="xs:string" subname="exe_cwd">......</saml:AttributeValue>
-            <saml:AttributeValue xsi:type="xs:string" subname="exe_root">......</saml:AttributeValue>
-            <saml:AttributeValue xsi:type="xs:string" subname="env:env1">......</saml:AttributeValue>
-            <saml:AttributeValue xsi:type="xs:string" subname="env:env2">......</saml:AttributeValue>
+            <saml:AttributeValue xsi:type="xs:string" Name="bin-dir">......</saml:AttributeValue>
+            <saml:AttributeValue xsi:type="xs:string" Name="cmdargs">......</saml:AttributeValue>
+            <saml:AttributeValue xsi:type="xs:string" Name="exe_cwd">......</saml:AttributeValue>
+            <saml:AttributeValue xsi:type="xs:string" Name="exe_root">......</saml:AttributeValue>
+            <saml:AttributeValue xsi:type="xs:string" Name="env:env1">......</saml:AttributeValue>
+            <saml:AttributeValue xsi:type="xs:string" Name="env:env2">......</saml:AttributeValue>
         </saml:Attribute>
 
         <saml:Attribute Name="app-ctx">
-            <saml:AttributeValue xsi:type="xs:string" subname="ctx-name">ctx_value</saml:AttributeValue>
+            <saml:AttributeValue xsi:type="xs:string" Name="ctx-name">ctx_value</saml:AttributeValue>
         </saml:Attribute>
 
         <saml:Attribute Name="sys-ctx">
-            <saml:AttributeValue xsi:type="xs:string" subname="ctx-name">ctx_value</saml:AttributeValue>
+            <saml:AttributeValue xsi:type="xs:string" Name="ctx-name">ctx_value</saml:AttributeValue>
         </saml:Attribute>
 
         <saml:Attribute Name="roles">
