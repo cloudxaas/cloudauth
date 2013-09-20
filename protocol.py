@@ -8,11 +8,38 @@
     Version="2.0"
     IssueInstant="2004-12-05T09:21:59Z"
     AssertionConsumerServiceIndex="1">
+    <!-- TODO: how to request attributes assertion -->
+    <saml:Subject>
+        <saml:NameID Format="app@host#user">app@host#user</saml:NameID>
+        <!-- info on how subject is verified: transport or key/challenge  -->
+        <saml:SubjectConfirmation
+           Method="urn:oasis:names:tc:SAML:2.0:cm:bearer">
+           <saml:SubjectConfirmationData Address="host fqdn or ip">
+		<ds:KeyInfo></ds:KeyInfo>
+           </saml:SubjectConfirmationData>
+        </saml:SubjectConfirmation>
+    </saml:Subject>
 
-    <saml:Issuer>https://sp.example.com/SAML2</saml:Issuer>
-    <samlp:NameIDPolicy
-        AllowCreate="true"
+    <saml:NameIDPolicy
+        AllowCreate="false"
         Format="urn:oasis:names:tc:SAML:2.0:nameid-format:transient"/>
+
+    <saml:Conditions
+        NotBefore="2005-01-31T12:00:00Z"
+        NotOnOrAfter="2005-01-31T12:10:00Z">
+
+        <saml:OneTimeUse/>
+
+        <!-- who can proxy this assertion -->
+        <saml:ProxyRestriction count="1">
+            <saml:Audience>https://px.example.com/SAML2</saml:Audience>
+        </saml:ProxyRestriction>
+        <!-- who this assertion is intended -->
+        <saml:AudienceRestriction>
+           <saml:Audience Format="app@host#user">srvs-a@jzsrv.y.c#jz</saml:Audience>
+        </saml:AudienceRestriction>
+    </saml:Conditions>
+
 </samlp:AuthnRequest>
 
 <saml:Assertion xmlns:saml=”urn:oasis:names:tc:SAML:2.0:assertion”
