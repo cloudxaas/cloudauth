@@ -39,6 +39,46 @@
            <saml:Audience Format="app@host#user">srvs-a@jzsrv.y.c#jz</saml:Audience>
         </saml:AudienceRestriction>
     </saml:Conditions>
+    
+    <samlp:Extensions>
+        <saml:AttributeStatement>
+            <saml:Attribute Name="binary">
+                <!-- first one is the "main" executable, modules afterwards -->
+                <saml:AttributeValue xsi:type="xs:string" subname="path2binary"/>
+            </saml:Attribute>
+
+            <saml:Attribute Name="rt-ctx">
+                <saml:AttributeValue xsi:type="xs:string" Name="bin-dir"/>
+                <saml:AttributeValue xsi:type="xs:string" Name="cmdargs"/>
+                <saml:AttributeValue xsi:type="xs:string" Name="exe_cwd"/>
+                <saml:AttributeValue xsi:type="xs:string" Name="exe_root"/>
+                <saml:AttributeValue xsi:type="xs:string" Name="env:env1"/>
+                <saml:AttributeValue xsi:type="xs:string" Name="env:env2"/>
+            </saml:Attribute>
+
+            <saml:Attribute Name="app-ctx">
+                <saml:AttributeValue xsi:type="xs:string" Name="ctx-name1"/>
+                <saml:AttributeValue xsi:type="xs:string" Name="ctx-name2"/>
+            </saml:Attribute>
+
+            <saml:Attribute Name="sys-ctx">
+                <saml:AttributeValue xsi:type="xs:string" Name="ctx-name1"/>
+                <saml:AttributeValue xsi:type="xs:string" Name="ctx-name2"/>
+            </saml:Attribute>
+
+            <saml:Attribute Name="roles">
+                <!--rolename is preferrably service scoped, or only return
+                    roles applicable to a service. 
+                    due to need-to-know, for each service listed below, there
+                    will be a seperate "assertion", i.e. auth_token returned. 
+                -->
+                <saml:AttributeValue xsi:type="xs:string" Name="serviceid">service1</saml:AttributeValue>
+                <saml:AttributeValue xsi:type="xs:string" Name="serviceid">service2</saml:AttributeValue>
+            </saml:Attribute>
+   
+        </saml:AttributeStatement>
+
+    </samlp:Extensions>
 
 </samlp:AuthnRequest>
 
