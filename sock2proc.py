@@ -3,9 +3,9 @@
 import os
 import sys
 import pwd
+import uuid 
 import struct
 import socket
-import hashlib
 import logging
 import base64
 
@@ -38,7 +38,9 @@ class ProcInfo(object):
 
     def proc_sign(self):
 
-        m = "subject=" + self.clnt
+        m = "uuid=" + str(uuid.uuid4())
+ 
+        m += "&subject=" + self.clnt
         
         m += "&procbin=" + self.binh
  
@@ -50,7 +52,9 @@ class ProcInfo(object):
         ec = EC.load_key("./ssh_host_ecdsa_key")
 
         sig = ec.sign_dsa_asn1(h)
-        #good = ec.verify_dsa_asn1(h, sig)
+        good = ec.verify_dsa_asn1(h, sig)
+        if (good ==1):
+            logger.info("verified: %s", len(sig))
 
         s64 = base64.urlsafe_b64encode(sig)
 
@@ -190,13 +194,14 @@ class ProcInfo(object):
         hash = ""
 
         with open(file, 'rb') as fh:
-            m = hashlib.sha1()
+            m = EVP.MessageDigest('sha1')
             while True:
                 data = fh.read(8192)
                 if not data:
                     break
                 m.update(data)
-            hash = m.hexdigest()
+            hash = m.final()
+            hash = base64.urlsafe_b64encode(hash)
 
         return hash 
  
