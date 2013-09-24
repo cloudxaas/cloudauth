@@ -1,4 +1,4 @@
-#!/usr/bin/python3
+#!/usr/bin/python
 
 import os
 import sys
@@ -7,6 +7,9 @@ import struct
 import socket
 import hashlib
 import logging
+import base64
+
+from M2Crypto import EVP, EC, util
 
 logger = logging.getLogger("sock2proc")
 
@@ -32,8 +35,27 @@ class ProcInfo(object):
         self.sock = sock
         self.pid = pid
         self.euid = euid
+
+    def proc_sign(self):
+
+        m = "subject=" + self.clnt
         
-            
+        m += "&procbin=" + self.binh
+ 
+        md = EVP.MessageDigest('sha1')
+        md.update(m)        
+   
+        h = md.final()
+   
+        ec = EC.load_key("./ssh_host_ecdsa_key")
+
+        sig = ec.sign_dsa_asn1(h)
+        #good = ec.verify_dsa_asn1(h, sig)
+
+        s64 = base64.urlsafe_b64encode(sig)
+
+        logger.info(s64)
+ 
     def proc_info(self):
 
         # Either pid or sock must be available
@@ -103,7 +125,9 @@ class ProcInfo(object):
         
         self.cwd = os.path.realpath("/proc/" + self.pid + "/cwd")
         self.root = os.path.realpath("/proc/" + self.pid + "/root")
-             
+        
+        self.proc_sign()
+     
         return True
 
     # Find the inode of a local sock address    

@@ -1,4 +1,4 @@
-#!/usr/bin/python3
+#!/usr/bin/python
 
 """
 Running on local host, listening on https over tcp and http over unix domain socket
@@ -7,16 +7,15 @@ for authentication assertions and secure temporary storage of authorization asse
 import os
 import struct
 import socket
-import http.server
-import socketserver
+import SocketServer
 import ssl
 import threading
 import tempfile
 import sock2proc
 import logging
 
-from socketserver import TCPServer, UnixStreamServer, ThreadingMixIn, ThreadingTCPServer
-from http.server import SimpleHTTPRequestHandler
+from SocketServer import TCPServer, UnixStreamServer, ThreadingMixIn, ThreadingTCPServer
+from SimpleHTTPServer import SimpleHTTPRequestHandler
 from sock2proc import ProcInfo
 
 LOCAL_PORT = 6443 
@@ -61,7 +60,7 @@ class HttpsThread (threading.Thread):
 
             httpd = MyThreadingTCPServer(("", self.port), handler) #TODO "" -> localhost
 
-            httpd.socket = ssl.wrap_socket (httpd.socket, keyfile='./ssh_host_rsa_key', certfile='./ssh_host_rsa_key.crt', server_side=True)
+            httpd.socket = ssl.wrap_socket (httpd.socket, keyfile='./ssh_host_ecdsa_key', certfile='./ssh_host_ecdsa_key.crt', server_side=True)
  
         else :
 
