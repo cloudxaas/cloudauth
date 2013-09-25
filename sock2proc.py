@@ -36,30 +36,6 @@ class ProcInfo(object):
         self.pid = pid
         self.euid = euid
 
-    def proc_sign(self):
-
-        m = "uuid=" + str(uuid.uuid4())
- 
-        m += "&subject=" + self.clnt
-        
-        m += "&procbin=" + self.binh
- 
-        md = EVP.MessageDigest('sha1')
-        md.update(m)        
-   
-        h = md.final()
-   
-        ec = EC.load_key("./ssh_host_ecdsa_key")
-
-        sig = ec.sign_dsa_asn1(h)
-        good = ec.verify_dsa_asn1(h, sig)
-        if (good ==1):
-            logger.info("verified: %s", len(sig))
-
-        s64 = base64.urlsafe_b64encode(sig)
-
-        logger.info(s64)
- 
     def proc_info(self):
 
         # Either pid or sock must be available
@@ -129,8 +105,6 @@ class ProcInfo(object):
         
         self.cwd = os.path.realpath("/proc/" + self.pid + "/cwd")
         self.root = os.path.realpath("/proc/" + self.pid + "/root")
-        
-        self.proc_sign()
      
         return True
 

@@ -17,6 +17,7 @@ import logging
 from SocketServer import TCPServer, UnixStreamServer, ThreadingMixIn, ThreadingTCPServer
 from SimpleHTTPServer import SimpleHTTPRequestHandler
 from sock2proc import ProcInfo
+from protocol import proc_sign
 
 LOCAL_PORT = 6443 
 LOCAL_PATH = tempfile.gettempdir() + "/cloudauth.sk"
@@ -29,11 +30,15 @@ class CloudAuthHTTPReqHandler(SimpleHTTPRequestHandler):
 
         proc = ProcInfo.sock2proc(self.client_address)
 
+        proc_sign(proc)
+
         SimpleHTTPRequestHandler.do_GET(self); 
 
     def do_POST(self):
 
         proc = ProcInfo.sock2proc(self.client_address)
+
+        proc_sign(proc)
 
         SimpleHTTPRequestHandler.do_POST(self); 
  
