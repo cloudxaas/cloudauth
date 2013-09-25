@@ -22,6 +22,11 @@ from protocol import assert_authnz
 LOCAL_PORT = 6443 
 LOCAL_PATH = tempfile.gettempdir() + "/cloudauth.sk"
 
+SIG_KEY_FILE = "./ssh_host_ecdsa_key"
+
+TLS_KEY_FILE = "./ssh_host_ecdsa_key"
+TLS_CRT_FILE = "./ssh_host_ecdsa_key.crt"
+
 logger = logging.getLogger("authagent")
 
 class CloudAuthHTTPReqHandler(SimpleHTTPRequestHandler):
@@ -30,7 +35,7 @@ class CloudAuthHTTPReqHandler(SimpleHTTPRequestHandler):
 
         proc = ProcInfo.sock2proc(self.client_address)
 
-        assert_authnz(proc)
+        assert_authnz(proc, SIG_KEY_FILE)
 
         SimpleHTTPRequestHandler.do_GET(self); 
 
@@ -38,7 +43,7 @@ class CloudAuthHTTPReqHandler(SimpleHTTPRequestHandler):
 
         proc = ProcInfo.sock2proc(self.client_address)
 
-        assert_authnz(proc)
+        assert_authnz(proc, SIG_KEY_FILE)
 
         SimpleHTTPRequestHandler.do_POST(self); 
  
@@ -65,7 +70,7 @@ class HttpsThread (threading.Thread):
 
             httpd = MyThreadingTCPServer(("", self.port), handler) #TODO "" -> localhost
 
-            httpd.socket = ssl.wrap_socket (httpd.socket, keyfile='./ssh_host_ecdsa_key', certfile='./ssh_host_ecdsa_key.crt', server_side=True)
+            httpd.socket = ssl.wrap_socket (httpd.socket, keyfile = TLS_KEY_FILE, certfile=TLS_CRT_FILE, server_side=True)
  
         else :
 
