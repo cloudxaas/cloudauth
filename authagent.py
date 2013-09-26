@@ -109,6 +109,8 @@ class HttpsThread (threading.Thread):
             class ThreadingUsServer(ThreadingMixIn, UnixStreamServer): pass
             httpd = ThreadingUsServer(self.port, handler)
 
+            os.chmod(self.port, 0777)
+
         logger.info("serving at port %s", self.port) 
 
 
