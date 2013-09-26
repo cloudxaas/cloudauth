@@ -15,26 +15,22 @@ logger = logging.getLogger("sock2proc")
 
 class ProcInfo(object):
     
-    sock = -1 # used to find proc info vi proc/etc/net
-    
-    pid = -1
-    euid = -1
-    user = ""
-    cmd = ""
-    arg = [] 
-    env = {} 
-    clnt = ""
-    binh = ""
-    bindir = ""   
-
-    cwd = "/"
-    root = "/"
-
     # Either sock (local tcp) or pid/euid (unix stream) must be present
     def __init__(self, sock = -1, pid = -1, euid = -1):
-        self.sock = sock
+    
+        self.sock = sock # used to find proc info vi proc/etc/net
         self.pid = pid
         self.euid = euid
+
+        self.clnt = ""
+        self.binh = ""
+        self.user = ""
+        self.cmd = ""
+        self.arg = [] 
+        self.env = {} 
+        self.bindir = ""   
+        self.cwd = "/"
+        self.root = "/"
 
     def proc_info(self):
 
