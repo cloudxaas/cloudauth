@@ -33,36 +33,49 @@ logger = logging.getLogger("authagent")
 
 class CloudAuthHTTPReqHandler(SimpleHTTPRequestHandler):
 
+    is_inet = True
+    is_post = True
+
+    def service(self):
+
+        proc = self.peer_proc()
+
+        assert_authnz(proc, SIG_KEY_FILE)
+
+        if (self.is_inet):
+            if (self.is_post):
+                SimpleHTTPRequestHandler.do_POST(self); 
+            else:
+                SimpleHTTPRequestHandler.do_GET(self); 
+        else:
+            self.connection.send("HTTP/1.0 200 OK\r\nContent-type:text\r\nContent-length:0\r\n\r\n")
+
     def peer_proc(self):
 
         proc = None
 
         if (isinstance(self.client_address, str)):
+            self.is_inet = False
             creds = self.connection.getsockopt(socket.SOL_SOCKET, SO_PEERCRED, struct.calcsize('3i'))
             pid, euid, egid = struct.unpack('3i', creds)
             logger.info("client via AF_UNIX, pid %s, uid %s", pid, euid)
             proc = ProcInfo.pipe2proc(pid, euid)
         else:
+            self.is_inet = True 
             logger.info("client via AF_INET,  %s", self.client_address)
             proc = ProcInfo.sock2proc(self.client_address)
 
         return proc
 
     def do_GET(self):
-
-        proc = self.peer_proc()
-
-        assert_authnz(proc, SIG_KEY_FILE)
-
-        SimpleHTTPRequestHandler.do_GET(self); 
+        
+        self.is_post = False
+        self.service()
 
     def do_POST(self):
 
-        proc = self.peer_proc()
-
-        assert_authnz(proc, SIG_KEY_FILE)
-
-        SimpleHTTPRequestHandler.do_POST(self); 
+        self.is_post = True 
+        self.service()
  
 class HttpsThread (threading.Thread):
 
