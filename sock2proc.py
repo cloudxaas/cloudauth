@@ -55,7 +55,7 @@ class ProcInfo(object):
         self.user = pwd.getpwuid(int(self.euid))[0];
         logger.info("user = %s", self.user)
 
-        fname = open("/proc/" + self.pid + "/cmdline", "r")
+        fname = open("/proc/" + str(self.pid) + "/cmdline", "r")
         self.cmd = fname.readline()
         self.cmd = self.cmd.strip()
         fname.close()
@@ -85,11 +85,11 @@ class ProcInfo(object):
         self.clnt = self.cmd + "@" + socket.getfqdn() + "#" + self.user
         logger.info("clnt id: %s", self.clnt) 
 
-        self.binh = ProcInfo.hash_file("/proc/" + self.pid + "/exe")
+        self.binh = ProcInfo.hash_file("/proc/" + str(self.pid) + "/exe")
  
         logger.info("clnt exe hash: %s",self.binh) 
 
-        fname = open("/proc/" + self.pid + "/environ", "r")
+        fname = open("/proc/" + str(self.pid) + "/environ", "r")
         envlist = fname.readline()
         fname.close()
 
@@ -103,8 +103,8 @@ class ProcInfo(object):
     
         logger.info("clnt env: %s", self.env)
         
-        self.cwd = os.path.realpath("/proc/" + self.pid + "/cwd")
-        self.root = os.path.realpath("/proc/" + self.pid + "/root")
+        self.cwd = os.path.realpath("/proc/" + str(self.pid) + "/cwd")
+        self.root = os.path.realpath("/proc/" + str(self.pid) + "/root")
      
         return True
 
