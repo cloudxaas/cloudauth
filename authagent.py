@@ -14,6 +14,8 @@ import tempfile
 import sock2proc
 import logging
 
+SO_PEERCRED = 17
+
 from SocketServer import TCPServer, UnixStreamServer, ThreadingMixIn, ThreadingTCPServer
 from SimpleHTTPServer import SimpleHTTPRequestHandler
 from sock2proc import ProcInfo
@@ -31,9 +33,24 @@ logger = logging.getLogger("authagent")
 
 class CloudAuthHTTPReqHandler(SimpleHTTPRequestHandler):
 
+    def peer_proc(self):
+
+        proc = None
+
+        if (isinstance(self.client_address, str)):
+            creds = self.connection.getsockopt(socket.SOL_SOCKET, SO_PEERCRED, struct.calcsize('3i'))
+            pid, euid, egid = struct.unpack('3i', creds)
+            logger.info("client via AF_UNIX, pid %s, uid %s", pid, euid)
+            proc = ProcInfo.pipe2proc(pid, euid)
+        else:
+            logger.info("client via AF_INET,  %s", self.client_address)
+            proc = ProcInfo.sock2proc(self.client_address)
+
+        return proc
+
     def do_GET(self):
 
-        proc = ProcInfo.sock2proc(self.client_address)
+        proc = self.peer_proc()
 
         assert_authnz(proc, SIG_KEY_FILE)
 
@@ -41,7 +58,7 @@ class CloudAuthHTTPReqHandler(SimpleHTTPRequestHandler):
 
     def do_POST(self):
 
-        proc = ProcInfo.sock2proc(self.client_address)
+        proc = self.peer_proc()
 
         assert_authnz(proc, SIG_KEY_FILE)
 
