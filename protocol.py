@@ -21,6 +21,8 @@ logger = logging.getLogger("protocol")
 #v: issue time in sec in hex (since MY_EPOCH) | duration in sec in hex
 #i: locally pseudo-unique identifier 
 #r: server challenge
+#a: algo
+#k: url to pub key
 SUBJECT_AUTH   = 0x0001 #s
 APP_BIN_AUTH   = 0x0002 #b
 CMDLINE_AUTH   = 0x0004 #c
@@ -48,7 +50,10 @@ def assert_authnz(proc, keyfile, fmt = SUBJECT_AUTH, validity=300, challenge=Non
 
     if (challenge != None):
    	m += "&r=" + str(challenge)
- 
+
+    m += "&a=ecdsasha1"
+    m += "&k=url"
+     
     md = EVP.MessageDigest('sha1')
     md.update(m)        
    
@@ -64,7 +69,7 @@ def assert_authnz(proc, keyfile, fmt = SUBJECT_AUTH, validity=300, challenge=Non
         logger.info("verified: %s", len(sig))
     """
 
-    ret = m + "&h=" + base64.urlsafe_b64encode(sig)
+    ret = m + "&h=" + base64.urlsafe_b64encode(sig).rstrip("=")
 
     logger.info(ret)
 
