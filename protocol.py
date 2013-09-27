@@ -17,6 +17,12 @@ from M2Crypto import EVP, EC, util
 
 logger = logging.getLogger("protocol")
 
+
+def assert_authz(authn):
+    #TODO
+    return authn
+
+
 #sub-levels using . (dot), e.g. e.PATH for path env variable
 #v: issue time in sec in hex (since MY_EPOCH) | duration in sec in hex
 #i: locally pseudo-unique identifier 
@@ -36,7 +42,7 @@ ROLEATT_AUTH   = 0x0100 #az
 
 MY_EPOCH = time.mktime(datetime.datetime(2013,1,1,0,0).timetuple())
 
-def assert_authnz_jwt(proc, keyfile, fmt = SUBJECT_AUTH, validity=300, challenge=None):
+def assert_authn_jwt(proc, keyfile, fmt = SUBJECT_AUTH, validity=300, challenge=None):
 
     hdr = '{"alg":"es256", "x5u":""}'
 
@@ -86,7 +92,7 @@ def assert_authnz_jwt(proc, keyfile, fmt = SUBJECT_AUTH, validity=300, challenge
 
     return ret
 
-def assert_authnz_qstr(proc, keyfile, fmt = SUBJECT_AUTH, validity=300, challenge=None):
+def assert_authn_qst(proc, keyfile, fmt = SUBJECT_AUTH, validity=300, challenge=None):
 
     #uuid is an overkill, hence time-in-microsec and proc.pid seperated by '-'
     #m = "i=" + hex(uuid.uuid4()).lstrip("0x")
@@ -126,7 +132,7 @@ def assert_authnz_qstr(proc, keyfile, fmt = SUBJECT_AUTH, validity=300, challeng
 
     return ret
  
-def assert_authnz(proc, keyfile, fmt = SUBJECT_AUTH, validity=300, challenge=None):
+def assert_authn(proc, keyfile, fmt = SUBJECT_AUTH, validity=300, challenge=None):
 
-    return assert_authnz_qstr(proc, keyfile, fmt, validity, challenge)
+    return assert_authn_qst(proc, keyfile, fmt, validity, challenge)
 

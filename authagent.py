@@ -19,7 +19,7 @@ SO_PEERCRED = 17
 from SocketServer import TCPServer, UnixStreamServer, ThreadingMixIn, ThreadingTCPServer
 from SimpleHTTPServer import SimpleHTTPRequestHandler
 from sock2proc import ProcInfo
-from protocol import assert_authnz
+from protocol import assert_authn, assert_authz
 
 LOCAL_PORT = 6443 
 LOCAL_PATH = tempfile.gettempdir() + "/cloudauth.sk"
@@ -46,12 +46,24 @@ class CloudAuthHTTPReqHandler(SimpleHTTPRequestHandler):
 
             proc = self.peer_proc()
 
-            authnz = assert_authnz(proc, SIG_KEY_FILE)
+            authn = assert_authn(proc, SIG_KEY_FILE)
             
-            httphd = HTTP_RESP_HDRS % {"status" : "200 OK", "ctype" : "text/authnz", "clen" : str(len(authnz))}
+            httphd = HTTP_RESP_HDRS % {"status" : "200 OK", "ctype" : "text/authn", "clen" : str(len(authn))}
 
-            self.connection.send(httphd + authnz)
+            self.connection.send(httphd + authn)
 
+        elif (self.path.startswith("/authz")) :
+
+            proc = self.peer_proc()
+
+            authn = assert_authn(proc, SIG_KEY_FILE)
+            
+            authz = assert_authz(authn)
+
+            httphd = HTTP_RESP_HDRS % {"status" : "200 OK", "ctype" : "text/authz", "clen" : str(len(authz))}
+
+            self.connection.send(httphd + authz)
+        
         elif (self.path.startswith("/cert")) :
 
             cert = ""
@@ -62,16 +74,6 @@ class CloudAuthHTTPReqHandler(SimpleHTTPRequestHandler):
             httphd = HTTP_RESP_HDRS % {"status" : "200 OK", "ctype" : "text/cert", "clen" : str(len(cert))}
 
             self.connection.send(httphd + cert)
-
-        """
-        if (self.is_inet):
-            if (self.is_post):
-                SimpleHTTPRequestHandler.do_POST(self); 
-            else:
-                SimpleHTTPRequestHandler.do_GET(self); 
-        else:
-            self.connection.send("HTTP/1.0 200 OK\r\nContent-type:text\r\nContent-length:0\r\n\r\n")
-        """
 
     def peer_proc(self):
 
