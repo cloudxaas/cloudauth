@@ -75,6 +75,10 @@ class CloudAuthHTTPReqHandler(SimpleHTTPRequestHandler):
 
             self.connection.send(httphd + cert)
 
+        elif (self.path.startswith("/sign")) :
+            #sign arbituary data i=...&s=...&d=....&h=...
+            pass
+
         elif (self.path.startswith("/roles")) :
 
             pass
