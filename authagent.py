@@ -75,6 +75,10 @@ class CloudAuthHTTPReqHandler(SimpleHTTPRequestHandler):
 
             self.connection.send(httphd + cert)
 
+        elif (self.path.startswith("/roles")) :
+
+            pass
+
     def peer_proc(self):
 
         proc = None

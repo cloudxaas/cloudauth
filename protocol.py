@@ -18,9 +18,26 @@ from M2Crypto import EVP, EC, util
 logger = logging.getLogger("protocol")
 
 
-def assert_authz(authn):
-    #TODO
-    return authn
+def assert_authz(authn, *services):
+
+    authz = authn
+
+    # verify authn token
+
+    if (authn.startswith("authn_qst:")):
+        pass 
+    elif (authn.startswith("authn_jwt:")):
+        pass
+    
+    # get service agnostic roles    
+
+    # get service specific roles       
+    for svs in services:
+        pass 
+
+    # one token per service for perf
+
+    return authz
 
 
 #sub-levels using . (dot), e.g. e.PATH for path env variable
@@ -86,7 +103,7 @@ def assert_authn_jwt(proc, keyfile, fmt = SUBJECT_AUTH, validity=300, challenge=
         logger.info("verified: %s", len(sig))
     """
 
-    ret = pkt + "." + base64.urlsafe_b64encode(sig).rstrip("=")
+    ret = "authn_jwt:" + pkt + "." + base64.urlsafe_b64encode(sig).rstrip("=")
 
     logger.info(ret)
 
@@ -126,7 +143,7 @@ def assert_authn_qst(proc, keyfile, fmt = SUBJECT_AUTH, validity=300, challenge=
         logger.info("verified: %s", len(sig))
     """
 
-    ret = m + "&h=" + base64.urlsafe_b64encode(sig).rstrip("=")
+    ret = "authn_qst:" + m + "&h=" + base64.urlsafe_b64encode(sig).rstrip("=")
 
     logger.info(ret)
 
