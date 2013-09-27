@@ -78,7 +78,7 @@ class ProcInfo(object):
               
         logger.info("clnt bin dir: %s", self.bindir)
 
-        self.clnt = self.cmd + "@" + socket.getfqdn() + "#" + self.user
+        self.clnt = self.cmd + "~" + socket.getfqdn() + "~" + self.user
         logger.info("clnt id: %s", self.clnt) 
 
         self.binh = ProcInfo.hash_file("/proc/" + str(self.pid) + "/exe")

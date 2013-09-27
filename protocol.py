@@ -36,21 +36,71 @@ ROLEATT_AUTH   = 0x0100 #az
 
 MY_EPOCH = time.mktime(datetime.datetime(2013,1,1,0,0).timetuple())
 
-def assert_authnz(proc, keyfile, fmt = SUBJECT_AUTH, validity=300, challenge=None):
+def assert_authnz_jwt(proc, keyfile, fmt = SUBJECT_AUTH, validity=300, challenge=None):
+
+    hdr = '{"alg":"es256", "x5u":""}'
+
+    logger.info("authnz header: %s", hdr)
+
+    bdy = '{'
 
     #uuid is an overkill, hence time-in-microsec and proc.pid seperated by '-'
     #m = "i=" + hex(uuid.uuid4()).lstrip("0x")
-    m = "i=" + hex(int(time.time() * 1000000)).lstrip("0x").rstrip("L") + "-" + hex(int(proc.pid)).lstrip("0x")
+    bdy += '"i":"' + hex(int(time.time() * 1000000)).lstrip("0x").rstrip("L") + "-" + hex(int(proc.pid)).lstrip("0x") + '"'
+ 
+    bdy += ',"s":"' + proc.clnt + '"'
+    
+    bdy += ',"v":"' + str(hex(int(time.time() - MY_EPOCH))).lstrip("0x") + "-" +  hex(validity).lstrip("0x") +'"'
+
+    if (fmt & APP_BIN_AUTH):    
+        bdy += ',"b":"'+ proc.binh + '"'
+
+    if (challenge != None):
+   	    bdy += ',"r":"' + str(challenge) + '"'
+
+    bdy += "}"
+
+    logger.info("anthnz payload: %s", bdy)
+
+    md = EVP.MessageDigest('sha256')
+
+    pkt = base64.urlsafe_b64encode(hdr).rstrip("=") + "." + base64.urlsafe_b64encode(bdy).rstrip("=")
+
+    md.update(pkt)
+
+    h = md.final()
+   
+    ec = EC.load_key(keyfile)
+
+    sig = ec.sign_dsa_asn1(h)
+    
+    """
+    good = ec.verify_dsa_asn1(h, sig)
+    if (good ==1):
+        logger.info("verified: %s", len(sig))
+    """
+
+    ret = pkt + "." + base64.urlsafe_b64encode(sig).rstrip("=")
+
+    logger.info(ret)
+
+    return ret
+
+def assert_authnz_qstr(proc, keyfile, fmt = SUBJECT_AUTH, validity=300, challenge=None):
+
+    #uuid is an overkill, hence time-in-microsec and proc.pid seperated by '-'
+    #m = "i=" + hex(uuid.uuid4()).lstrip("0x")
+    m = "i=" + hex(int(time.time() * 1000000)).lstrip("0x").rstrip("L") + "~" + hex(int(proc.pid)).lstrip("0x")
  
     m += "&s=" + proc.clnt
     
-    m += "&v=" + str(hex(int(time.time() - MY_EPOCH))).lstrip("0x") + "-" +  hex(validity).lstrip("0x")
+    m += "&v=" + str(hex(int(time.time() - MY_EPOCH))).lstrip("0x") + "~" +  hex(validity).lstrip("0x")
 
     if (fmt & APP_BIN_AUTH):    
         m += "&b=" + proc.binh
 
     if (challenge != None):
-   	m += "&r=" + str(challenge)
+       	m += "&r=" + str(challenge)
 
     m += "&a=11"
     m += "&k=url"
@@ -76,3 +126,7 @@ def assert_authnz(proc, keyfile, fmt = SUBJECT_AUTH, validity=300, challenge=Non
 
     return ret
  
+def assert_authnz(proc, keyfile, fmt = SUBJECT_AUTH, validity=300, challenge=None):
+
+    return assert_authnz_qstr(proc, keyfile, fmt, validity, challenge)
+
