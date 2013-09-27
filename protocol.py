@@ -21,7 +21,8 @@ logger = logging.getLogger("protocol")
 #v: issue time in sec in hex (since MY_EPOCH) | duration in sec in hex
 #i: locally pseudo-unique identifier 
 #r: server challenge
-#a: algo
+#a: algo, algo identifier: XY, here X is the signing algo, Y is the hashing algo 
+#         00-HMAC, 11 - ecdsa-sha1, 12 - ecdsa-sha256, 21 - dsa-sha1, 31 - rsa-sha1
 #k: url to pub key
 SUBJECT_AUTH   = 0x0001 #s
 APP_BIN_AUTH   = 0x0002 #b
@@ -51,7 +52,7 @@ def assert_authnz(proc, keyfile, fmt = SUBJECT_AUTH, validity=300, challenge=Non
     if (challenge != None):
    	m += "&r=" + str(challenge)
 
-    m += "&a=ecdsasha1"
+    m += "&a=11"
     m += "&k=url"
      
     md = EVP.MessageDigest('sha1')
