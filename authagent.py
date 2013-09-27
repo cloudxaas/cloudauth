@@ -29,6 +29,8 @@ SIG_KEY_FILE = "./ssh_host_ecdsa_key"
 TLS_KEY_FILE = "./ssh_host_ecdsa_key"
 TLS_CRT_FILE = "./ssh_host_ecdsa_key.crt"
 
+HTTP_RESP_HDRS = "HTTP/1.0 %(status)s\r\nContent-type:%(ctype)s\r\nContent-length:%(clen)s\r\n\r\n"
+
 logger = logging.getLogger("authagent")
 
 class CloudAuthHTTPReqHandler(SimpleHTTPRequestHandler):
@@ -38,10 +40,30 @@ class CloudAuthHTTPReqHandler(SimpleHTTPRequestHandler):
 
     def service(self):
 
-        proc = self.peer_proc()
+        logger.info("path = %s", self.path)
 
-        assert_authnz(proc, SIG_KEY_FILE)
+        if (self.path.startswith("/authn")) :
 
+            proc = self.peer_proc()
+
+            authnz = assert_authnz(proc, SIG_KEY_FILE)
+            
+            httphd = HTTP_RESP_HDRS % {"status" : "200 OK", "ctype" : "text/authnz", "clen" : str(len(authnz))}
+
+            self.connection.send(httphd + authnz)
+
+        elif (self.path.startswith("/cert")) :
+
+            cert = ""
+
+            with open(TLS_CRT_FILE, 'rb') as fh:
+                cert = fh.read()
+
+            httphd = HTTP_RESP_HDRS % {"status" : "200 OK", "ctype" : "text/cert", "clen" : str(len(cert))}
+
+            self.connection.send(httphd + cert)
+
+        """
         if (self.is_inet):
             if (self.is_post):
                 SimpleHTTPRequestHandler.do_POST(self); 
@@ -49,6 +71,7 @@ class CloudAuthHTTPReqHandler(SimpleHTTPRequestHandler):
                 SimpleHTTPRequestHandler.do_GET(self); 
         else:
             self.connection.send("HTTP/1.0 200 OK\r\nContent-type:text\r\nContent-length:0\r\n\r\n")
+        """
 
     def peer_proc(self):
 
