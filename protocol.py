@@ -18,17 +18,68 @@ from M2Crypto import EVP, EC, util
 logger = logging.getLogger("protocol")
 
 
+def verify_authn(authn, keyfile):
+
+    if (authn.startswith("authn_qst:")):
+    
+        authn = authn.lstrip("authn_qst:")
+   
+        token = authn[0:authn.rfind("&h=")]
+     
+        attrs = authn.split("&")
+
+        #logger.info("%s", attrs)
+
+        i = ""  #token identifier
+        s = ""  #subject app~host~user
+        a = ""  #algo
+        k = ""  # url to key
+        h = ""  #signature
+
+        for attr in attrs :
+
+            name,value = attr.split("=", 1)
+
+            logger.info("%s %s", name, value)        
+
+            if (name == "i"):
+                i = value
+            elif (name == "s"):
+                s = value        
+            elif (name == "a"):
+                a = value
+            elif (name == "k"):
+                k = value
+            elif (name == "h") :
+                h = value
+                h += "=" * (3 - len(h) % 3)  # add pading if needed
+                h = base64.urlsafe_b64decode(h)
+        #TODO check revocation based token identifier
+            
+        #TODO check revocation based on signing cert
+
+        md = EVP.MessageDigest('sha1')
+        md.update(token)        
+        token = md.final()
+   
+        ec = EC.load_key(keyfile)
+        
+        good = ec.verify_dsa_asn1(token, h)
+        if (good ==1):
+            logger.info("verified: %s", s)
+         
+    elif (authn.startswith("authn_jwt:")):
+        pass
+
+
 def assert_authz(authn, *services):
 
     authz = authn
 
     # verify authn token
 
-    if (authn.startswith("authn_qst:")):
-        pass 
-    elif (authn.startswith("authn_jwt:")):
-        pass
-    
+    verify_authn(authn)
+
     # get service agnostic roles    
 
     # get service specific roles       
@@ -146,6 +197,8 @@ def assert_authn_qst(proc, keyfile, fmt = SUBJECT_AUTH, validity=300, challenge=
     ret = "authn_qst:" + m + "&h=" + base64.urlsafe_b64encode(sig).rstrip("=")
 
     logger.info(ret)
+
+    verify_authn(ret, keyfile) #TODO: remove
 
     return ret
  
