@@ -17,9 +17,7 @@ import sock2proc
 
 from M2Crypto import EVP, EC, util
 
-SIG_KEY_FILE = "./ssh_host_ecdsa_key"
-
-logger = logging.getLogger("protocol")
+logger = logging.getLogger("libauthn")
 
 #sub-levels using . (dot), e.g. e.PATH for path env variable
 #v: issue time in sec in hex (since MY_EPOCH) | duration in sec in hex
@@ -241,14 +239,21 @@ def assert_authn_qst(proc, keyfile, fmt = SUBJECT_AUTH, validity=300, challenge=
 
     return ret
  
-def assert_authn(proc, tkn_type = "qst", fmt = SUBJECT_AUTH, validity=300, challenge=None):
+def assert_authn(proc, keyfile, tkn_type = "qst", fmt = SUBJECT_AUTH, validity=300, challenge=None):
 
     if (tkn_type == "qst"):
-        token = assert_authn_qst(proc, SIG_KEY_FILE, fmt, validity, challenge)
+        token = assert_authn_qst(proc, keyfile, fmt, validity, challenge)
     elif (tkn_type == "jwt"):
-        token = assert_authn_jwt(proc, SIG_KEY_FILE, fmt, validity, challenge)
+        token = assert_authn_jwt(proc, keyfile, fmt, validity, challenge)
     else:
         return None
 
     return token 
-    
+
+def assert_authz(authn, authn_keyfile, idpurl, *services):
+
+    authz = authn
+
+    #TODO call idp server to get authz
+ 
+    return authz    

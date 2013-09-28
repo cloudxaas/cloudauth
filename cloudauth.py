@@ -19,11 +19,16 @@ SO_PEERCRED = 17
 from SocketServer import TCPServer, UnixStreamServer, ThreadingMixIn, ThreadingTCPServer
 from SimpleHTTPServer import SimpleHTTPRequestHandler
 from sock2proc import ProcInfo
-from libauthn import assert_authn
-from libauthz import assert_authz
+
+import libauthn, libauthz
 
 LOCAL_PORT = 6443 
 LOCAL_PATH = tempfile.gettempdir() + "/cloudauth.sk"
+
+IDP_SRVR_URL = "https://localhost:6443/roles"
+
+SIG_KEY_FILE = "./ssh_host_ecdsa_key"
+AuZ_KEY_FILE = "./ssh_host_ecdsa_key"
 
 TLS_KEY_FILE = "./ssh_host_ecdsa_key"
 TLS_CRT_FILE = "./ssh_host_ecdsa_key.crt"
@@ -45,7 +50,7 @@ class CloudAuthHTTPReqHandler(SimpleHTTPRequestHandler):
 
             proc = self.peer_proc()
 
-            authn = assert_authn(proc)
+            authn = libauthn.assert_authn(proc, SIG_KEY_FILE)
             
             httphd = HTTP_RESP_HDRS % {"status" : "200 OK", "ctype" : "text/authn", "clen" : str(len(authn))}
 
@@ -55,9 +60,9 @@ class CloudAuthHTTPReqHandler(SimpleHTTPRequestHandler):
 
             proc = self.peer_proc()
 
-            authn = assert_authn(proc)
+            authn = libauthn.assert_authn(proc, SIG_KEY_FILE)
             
-            authz = assert_authz(authn)
+            authz = libauthn.assert_authz(authn, SIG_KEY_FILE, IDP_SRVR_URL)
 
             httphd = HTTP_RESP_HDRS % {"status" : "200 OK", "ctype" : "text/authz", "clen" : str(len(authz))}
 
@@ -81,6 +86,7 @@ class CloudAuthHTTPReqHandler(SimpleHTTPRequestHandler):
         elif (self.path.startswith("/roles")) :
 
             pass
+            #libauthz.assert_authn()
 
     def peer_proc(self):
 

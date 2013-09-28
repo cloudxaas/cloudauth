@@ -14,21 +14,19 @@ import datetime
 import json 
 import grp, pwd
 
-from libauthn import verify_authn, SIG_KEY_FILE #key will be removed
+import libauthn
 
 from M2Crypto import EVP, EC, util
 
-AuZ_KEY_FILE = "./ssh_host_ecdsa_key"
+logger = logging.getLogger("libauthz")
 
-logger = logging.getLogger("identityd")
-
-def assert_authz(authn, *services):
+def assert_authz(authn, authn_keyfile, idpurl, *services):
 
     authz = authn
 
     # verify authn token
 
-    if (verify_authn(authn, SIG_KEY_FILE) == False):
+    if (libauthn.verify_authn(authn, authn_keyfile) == False):
         return authn
 
     if (authn.startswith("authn_qst:")):
