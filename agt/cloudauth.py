@@ -11,27 +11,26 @@ import SocketServer
 import ssl
 import threading
 import tempfile
-import sock2proc
 import logging
 
 SO_PEERCRED = 17
 
 from SocketServer import TCPServer, UnixStreamServer, ThreadingMixIn, ThreadingTCPServer
 from SimpleHTTPServer import SimpleHTTPRequestHandler
-from sock2proc import ProcInfo
 
-import libauthn, libauthz
+from lib.sock2proc import ProcInfo
+from lib import libauthn, libauthz
 
 LOCAL_PORT = 6443 
 LOCAL_PATH = tempfile.gettempdir() + "/cloudauth.sk"
 
 IDP_SRVR_URL = "https://localhost:6443/roles"
 
-SIG_KEY_FILE = "./ssh_host_ecdsa_key"
-AuZ_KEY_FILE = "./ssh_host_ecdsa_key"
+SIG_KEY_FILE = "cnf/ssh_host_ecdsa_key"
+AuZ_KEY_FILE = "cnf/ssh_host_ecdsa_key"
 
-TLS_KEY_FILE = "./ssh_host_ecdsa_key"
-TLS_CRT_FILE = "./ssh_host_ecdsa_key.crt"
+TLS_KEY_FILE = "cnf/ssh_host_ecdsa_key"
+TLS_CRT_FILE = "cnf/ssh_host_ecdsa_key.crt"
 
 HTTP_RESP_HDRS = "HTTP/1.0 %(status)s\r\nContent-type:%(ctype)s\r\nContent-length:%(clen)s\r\n\r\n"
 
