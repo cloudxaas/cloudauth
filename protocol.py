@@ -17,6 +17,25 @@ from M2Crypto import EVP, EC, util
 
 logger = logging.getLogger("protocol")
 
+#sub-levels using . (dot), e.g. e.PATH for path env variable
+#v: issue time in sec in hex (since MY_EPOCH) | duration in sec in hex
+#i: locally pseudo-unique identifier 
+#r: server challenge
+#a: algo, algo identifier: XY, here X is the signing algo, Y is the hashing algo 
+#         00-HMAC, 11 - ecdsa-sha1, 12 - ecdsa-sha256, 21 - dsa-sha1, 31 - rsa-sha1
+#k: url to pub key
+SUBJECT_AUTH   = 0x0001 #s
+APP_BIN_AUTH   = 0x0002 #b
+CMDLINE_AUTH   = 0x0004 #c
+ENVVARS_AUTH   = 0x0008 #e
+APP_CTX_AUTH   = 0x0010 #ac
+SYS_CTX_AUTH   = 0x0020 #sc
+PXY_CTX_AUTH   = 0x0040 #pc
+AUTHCTX_AUTH   = 0x0080 #an
+ROLEATT_AUTH   = 0x0100 #az
+
+MY_EPOCH = time.mktime(datetime.datetime(2013,1,1,0,0).timetuple())
+
 
 def verify_authn(authn, keyfile):
 
@@ -30,33 +49,42 @@ def verify_authn(authn, keyfile):
 
         #logger.info("%s", attrs)
 
-        i = ""  #token identifier
-        s = ""  #subject app~host~user
-        a = ""  #algo
-        k = ""  # url to key
-        h = ""  #signature
+        nvpair = dict()
+        #i: token identifier
+        #s: subject app~host~user
+        #a: algo
+        #k: url to key
+        #h: signature
 
         for attr in attrs :
+            n,v = attr.split("=", 1)
+            nvpair[n] = v
 
-            name,value = attr.split("=", 1)
+        if (len(nvpair["h"]) % 3 != 0) :
+            nvpair["h"] += "=" * (3 - len(nvpair["h"]) % 3)  # add pading if needed
 
-            logger.info("%s %s", name, value)        
+        nvpair["h"] = base64.urlsafe_b64decode(nvpair["h"])
 
-            if (name == "i"):
-                i = value
-            elif (name == "s"):
-                s = value        
-            elif (name == "a"):
-                a = value
-            elif (name == "k"):
-                k = value
-            elif (name == "h") :
-                h = value
-                h += "=" * (3 - len(h) % 3)  # add pading if needed
-                h = base64.urlsafe_b64decode(h)
         #TODO check revocation based token identifier
             
         #TODO check revocation based on signing cert
+
+        #Check token expiration
+
+        start, delta = nvpair["v"].split("~", 1)
+
+        expiry = int(start, 16) + MY_EPOCH + int(delta, 16)
+       
+        if (expiry < time.time()):
+            logger.info("token %s expired", nvpair["i"])
+            return False
+         
+        logger.info("token %s not expired", nvpair["i"])
+
+        #TODO check other algo
+        if (nvpair["a"] != "11"):
+            logger.info("verification fail: unsupported algo %s", nvpair["a"])
+            return False
 
         md = EVP.MessageDigest('sha1')
         md.update(token)        
@@ -64,10 +92,14 @@ def verify_authn(authn, keyfile):
    
         ec = EC.load_key(keyfile)
         
-        good = ec.verify_dsa_asn1(token, h)
+        good = ec.verify_dsa_asn1(token, nvpair["h"])
         if (good ==1):
-            logger.info("verified: %s", s)
-         
+            logger.info("verification done: %s", nvpair["s"])
+            return True
+        else:
+            logger.info("verification fail: %s", nvpair["s"])
+            return True
+             
     elif (authn.startswith("authn_jwt:")):
         pass
 
@@ -90,25 +122,6 @@ def assert_authz(authn, *services):
 
     return authz
 
-
-#sub-levels using . (dot), e.g. e.PATH for path env variable
-#v: issue time in sec in hex (since MY_EPOCH) | duration in sec in hex
-#i: locally pseudo-unique identifier 
-#r: server challenge
-#a: algo, algo identifier: XY, here X is the signing algo, Y is the hashing algo 
-#         00-HMAC, 11 - ecdsa-sha1, 12 - ecdsa-sha256, 21 - dsa-sha1, 31 - rsa-sha1
-#k: url to pub key
-SUBJECT_AUTH   = 0x0001 #s
-APP_BIN_AUTH   = 0x0002 #b
-CMDLINE_AUTH   = 0x0004 #c
-ENVVARS_AUTH   = 0x0008 #e
-APP_CTX_AUTH   = 0x0010 #ac
-SYS_CTX_AUTH   = 0x0020 #sc
-PXY_CTX_AUTH   = 0x0040 #pc
-AUTHCTX_AUTH   = 0x0080 #an
-ROLEATT_AUTH   = 0x0100 #az
-
-MY_EPOCH = time.mktime(datetime.datetime(2013,1,1,0,0).timetuple())
 
 def assert_authn_jwt(proc, keyfile, fmt = SUBJECT_AUTH, validity=300, challenge=None):
 
