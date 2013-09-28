@@ -37,6 +37,13 @@ ROLEATT_AUTH   = 0x0100 #az
 
 MY_EPOCH = time.mktime(datetime.datetime(2013,1,1,0,0).timetuple())
 
+def base64url_decode(value) :
+
+    if (len(value) % 3 != 0) :
+        value += "=" * (3 - len(value) % 3)  # add pading if needed
+
+    return base64.urlsafe_b64decode(value)
+
 def time_left(v) :
 
     start, delta = v.split("~", 1)
@@ -68,10 +75,7 @@ def verify_authn(authn, keyfile):
             n,v = attr.split("=", 1)
             nvpair[n] = v
 
-        if (len(nvpair["h"]) % 3 != 0) :
-            nvpair["h"] += "=" * (3 - len(nvpair["h"]) % 3)  # add pading if needed
-
-        nvpair["h"] = base64.urlsafe_b64decode(nvpair["h"])
+        nvpair["h"] = base64url_decode(nvpair["h"])
 
         #TODO check revocation based token identifier
             
@@ -110,18 +114,10 @@ def verify_authn(authn, keyfile):
 
         head, body, sign = authn.split(".", 2)
 
-        if (len(sign) % 3 != 0) :
-            sign += "=" * (3 - len(sign) % 3)  # add pading if needed
-        sign = base64.urlsafe_b64decode(sign)
+        sign = base64url_decode(sign)
 
-        if (len(head) % 3 != 0) :
-            hdr = head + "=" * (3 - len(head) % 3)  # add pading if needed
-         
-        if (len(body) % 3 != 0) :
-            bdy = body + "=" * (3 - len(body) % 3)  # add pading if needed
-
-        hdr = base64.urlsafe_b64decode(hdr)
-        bdy = base64.urlsafe_b64decode(bdy)
+        hdr = base64url_decode(head)
+        bdy = base64url_decode(body)
 
         hdr = json.loads(hdr)
         bdy = json.loads(bdy)
@@ -267,7 +263,7 @@ def assert_authn_qst(proc, keyfile, fmt = SUBJECT_AUTH, validity=300, challenge=
  
 def assert_authn(proc, keyfile, fmt = SUBJECT_AUTH, validity=300, challenge=None):
 
-    token = assert_authn_jwt(proc, keyfile, fmt, validity, challenge)
+    token = assert_authn_qst(proc, keyfile, fmt, validity, challenge)
 
     verify_authn(token, keyfile) #TODO: remove
 
