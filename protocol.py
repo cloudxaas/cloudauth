@@ -10,6 +10,7 @@ import logging
 import base64
 import time
 import datetime
+import json 
 
 import sock2proc
 
@@ -36,6 +37,13 @@ ROLEATT_AUTH   = 0x0100 #az
 
 MY_EPOCH = time.mktime(datetime.datetime(2013,1,1,0,0).timetuple())
 
+def time_left(v) :
+
+    start, delta = v.split("~", 1)
+
+    expiry = int(start, 16) + MY_EPOCH + int(delta, 16)
+       
+    return expiry - time.time()
 
 def verify_authn(authn, keyfile):
 
@@ -71,11 +79,7 @@ def verify_authn(authn, keyfile):
 
         #Check token expiration
 
-        start, delta = nvpair["v"].split("~", 1)
-
-        expiry = int(start, 16) + MY_EPOCH + int(delta, 16)
-       
-        if (expiry < time.time()):
+        if (time_left(nvpair["v"]) <= 0):
             logger.info("token %s expired", nvpair["i"])
             return False
          
@@ -119,6 +123,25 @@ def verify_authn(authn, keyfile):
         hdr = base64.urlsafe_b64decode(hdr)
         bdy = base64.urlsafe_b64decode(bdy)
 
+        hdr = json.loads(hdr)
+        bdy = json.loads(bdy)
+ 
+        logger.info("jwt head: %s", hdr)
+        logger.info("jwt body: %s", bdy)
+   
+        #Check token expiration
+
+        if (time_left(bdy["v"]) <= 0):
+            logger.info("token %s expired", bdy["i"])
+            return False
+         
+        logger.info("token %s not expired", bdy["i"])
+
+        #TODO check other algo
+        if (hdr["alg"] != "es256"):
+            logger.info("verification fail: unsupported algo %s", hdr["alg"])
+            return False
+
         ec = EC.load_key(keyfile)
 
         md = EVP.MessageDigest('sha256')
@@ -130,7 +153,7 @@ def verify_authn(authn, keyfile):
         else:
             logger.info("verification fail")
             return False 
-            
+        
         return True
 
 def assert_authz(authn, *services):
@@ -154,7 +177,7 @@ def assert_authz(authn, *services):
 
 def assert_authn_jwt(proc, keyfile, fmt = SUBJECT_AUTH, validity=300, challenge=None):
 
-    hdr = '{"alg":"es256", "x5u":""}'
+    hdr = '{"alg":"es256","x5u":""}'
 
     logger.info("authnz header: %s", hdr)
 
@@ -162,11 +185,11 @@ def assert_authn_jwt(proc, keyfile, fmt = SUBJECT_AUTH, validity=300, challenge=
 
     #uuid is an overkill, hence time-in-microsec and proc.pid seperated by '-'
     #m = "i=" + hex(uuid.uuid4()).lstrip("0x")
-    bdy += '"i":"' + hex(int(time.time() * 1000000)).lstrip("0x").rstrip("L") + "-" + hex(int(proc.pid)).lstrip("0x") + '"'
+    bdy += '"i":"' + hex(int(time.time() * 1000000)).lstrip("0x").rstrip("L") + "~" + hex(int(proc.pid)).lstrip("0x") + '"'
  
     bdy += ',"s":"' + proc.clnt + '"'
     
-    bdy += ',"v":"' + str(hex(int(time.time() - MY_EPOCH))).lstrip("0x") + "-" +  hex(validity).lstrip("0x") +'"'
+    bdy += ',"v":"' + str(hex(int(time.time() - MY_EPOCH))).lstrip("0x") + "~" +  hex(validity).lstrip("0x") +'"'
 
     if (fmt & APP_BIN_AUTH):    
         bdy += ',"b":"'+ proc.binh + '"'
@@ -199,8 +222,6 @@ def assert_authn_jwt(proc, keyfile, fmt = SUBJECT_AUTH, validity=300, challenge=
     ret = "authn_jwt:" + pkt + "." + base64.urlsafe_b64encode(sig).rstrip("=")
 
     logger.info(ret)
-
-    verify_authn(ret, keyfile) #TODO: remove
 
     return ret
 
@@ -242,11 +263,13 @@ def assert_authn_qst(proc, keyfile, fmt = SUBJECT_AUTH, validity=300, challenge=
 
     logger.info(ret)
 
-    verify_authn(ret, keyfile) #TODO: remove
-
     return ret
  
 def assert_authn(proc, keyfile, fmt = SUBJECT_AUTH, validity=300, challenge=None):
 
-    return assert_authn_jwt(proc, keyfile, fmt, validity, challenge)
+    token = assert_authn_jwt(proc, keyfile, fmt, validity, challenge)
 
+    verify_authn(token, keyfile) #TODO: remove
+
+    return token 
+    
