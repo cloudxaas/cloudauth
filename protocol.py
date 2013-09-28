@@ -17,6 +17,9 @@ import sock2proc
 
 from M2Crypto import EVP, EC, util
 
+SIG_KEY_FILE = "./ssh_host_ecdsa_key"
+AuZ_KEY_FILE = "./ssh_host_ecdsa_key"
+
 logger = logging.getLogger("protocol")
 
 #sub-levels using . (dot), e.g. e.PATH for path env variable
@@ -68,6 +71,9 @@ def verify_authn(authn, keyfile):
         #a: algo
         #k: url to key
         #h: signature
+
+        if (len(attrs["s"][0]) <= 0):
+            return False
 
         attrs["h"][0] = base64url_decode(attrs["h"][0])
 
@@ -152,8 +158,19 @@ def assert_authz(authn, *services):
 
     # verify authn token
 
-    verify_authn(authn)
+    if (verify_authn(authn, SIG_KEY_FILE) == False):
+        return authn
 
+    if (authn.startswith("authn_qst:")):
+    
+        authn = authn.lstrip("authn_qst:")
+
+        attrs = urlparse.parse_qs(authn)
+
+        app, host, usr = attrs["s"][0].split("~", 2)
+
+        logger.info("%s %s %s", app, host, usr)
+    
     # get service agnostic roles    
 
     # get service specific roles       
@@ -161,6 +178,7 @@ def assert_authz(authn, *services):
         pass 
 
     # one token per service for perf
+
 
     return authz
 
@@ -255,11 +273,14 @@ def assert_authn_qst(proc, keyfile, fmt = SUBJECT_AUTH, validity=300, challenge=
 
     return ret
  
-def assert_authn(proc, keyfile, fmt = SUBJECT_AUTH, validity=300, challenge=None):
+def assert_authn(proc, tkn_type = "qst", fmt = SUBJECT_AUTH, validity=300, challenge=None):
 
-    token = assert_authn_qst(proc, keyfile, fmt, validity, challenge)
-
-    verify_authn(token, keyfile) #TODO: remove
+    if (tkn_type == "qst"):
+        token = assert_authn_qst(proc, SIG_KEY_FILE, fmt, validity, challenge)
+    elif (tkn_type == "jwt"):
+        token = assert_authn_jwt(proc, SIG_KEY_FILE, fmt, validity, challenge)
+    else:
+        return None
 
     return token 
     

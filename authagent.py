@@ -24,8 +24,6 @@ from protocol import assert_authn, assert_authz
 LOCAL_PORT = 6443 
 LOCAL_PATH = tempfile.gettempdir() + "/cloudauth.sk"
 
-SIG_KEY_FILE = "./ssh_host_ecdsa_key"
-
 TLS_KEY_FILE = "./ssh_host_ecdsa_key"
 TLS_CRT_FILE = "./ssh_host_ecdsa_key.crt"
 
@@ -46,7 +44,7 @@ class CloudAuthHTTPReqHandler(SimpleHTTPRequestHandler):
 
             proc = self.peer_proc()
 
-            authn = assert_authn(proc, SIG_KEY_FILE)
+            authn = assert_authn(proc)
             
             httphd = HTTP_RESP_HDRS % {"status" : "200 OK", "ctype" : "text/authn", "clen" : str(len(authn))}
 
@@ -56,7 +54,7 @@ class CloudAuthHTTPReqHandler(SimpleHTTPRequestHandler):
 
             proc = self.peer_proc()
 
-            authn = assert_authn(proc, SIG_KEY_FILE)
+            authn = assert_authn(proc)
             
             authz = assert_authz(authn)
 
