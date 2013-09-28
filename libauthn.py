@@ -18,7 +18,6 @@ import sock2proc
 from M2Crypto import EVP, EC, util
 
 SIG_KEY_FILE = "./ssh_host_ecdsa_key"
-AuZ_KEY_FILE = "./ssh_host_ecdsa_key"
 
 logger = logging.getLogger("protocol")
 
@@ -151,37 +150,6 @@ def verify_authn(authn, keyfile):
             return False 
         
         return True
-
-def assert_authz(authn, *services):
-
-    authz = authn
-
-    # verify authn token
-
-    if (verify_authn(authn, SIG_KEY_FILE) == False):
-        return authn
-
-    if (authn.startswith("authn_qst:")):
-    
-        authn = authn.lstrip("authn_qst:")
-
-        attrs = urlparse.parse_qs(authn)
-
-        app, host, usr = attrs["s"][0].split("~", 2)
-
-        logger.info("%s %s %s", app, host, usr)
-    
-    # get service agnostic roles    
-
-    # get service specific roles       
-    for svs in services:
-        pass 
-
-    # one token per service for perf
-
-
-    return authz
-
 
 def assert_authn_jwt(proc, keyfile, fmt = SUBJECT_AUTH, validity=300, challenge=None):
 

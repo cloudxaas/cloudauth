@@ -19,7 +19,8 @@ SO_PEERCRED = 17
 from SocketServer import TCPServer, UnixStreamServer, ThreadingMixIn, ThreadingTCPServer
 from SimpleHTTPServer import SimpleHTTPRequestHandler
 from sock2proc import ProcInfo
-from protocol import assert_authn, assert_authz
+from libauthn import assert_authn
+from libauthz import assert_authz
 
 LOCAL_PORT = 6443 
 LOCAL_PATH = tempfile.gettempdir() + "/cloudauth.sk"
