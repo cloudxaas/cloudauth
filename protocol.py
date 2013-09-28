@@ -11,6 +11,7 @@ import base64
 import time
 import datetime
 import json 
+import urlparse
 
 import sock2proc
 
@@ -60,22 +61,15 @@ def verify_authn(authn, keyfile):
    
         token = authn[0:authn.rfind("&h=")]
      
-        attrs = authn.split("&")
-
-        #logger.info("%s", attrs)
-
-        nvpair = dict()
+        attrs = urlparse.parse_qs(authn)
+ 
         #i: token identifier
         #s: subject app~host~user
         #a: algo
         #k: url to key
         #h: signature
 
-        for attr in attrs :
-            n,v = attr.split("=", 1)
-            nvpair[n] = v
-
-        nvpair["h"] = base64url_decode(nvpair["h"])
+        attrs["h"][0] = base64url_decode(attrs["h"][0])
 
         #TODO check revocation based token identifier
             
@@ -83,15 +77,15 @@ def verify_authn(authn, keyfile):
 
         #Check token expiration
 
-        if (time_left(nvpair["v"]) <= 0):
-            logger.info("token %s expired", nvpair["i"])
+        if (time_left(attrs["v"][0]) <= 0):
+            logger.info("token %s expired", attrs["i"][0])
             return False
          
-        logger.info("token %s not expired", nvpair["i"])
+        logger.info("token %s not expired", attrs["i"][0])
 
         #TODO check other algo
-        if (nvpair["a"] != "11"):
-            logger.info("verification fail: unsupported algo %s", nvpair["a"])
+        if (attrs["a"][0] != "11"):
+            logger.info("verification fail: unsupported algo %s", attrs["a"][0])
             return False
 
         md = EVP.MessageDigest('sha1')
@@ -100,12 +94,12 @@ def verify_authn(authn, keyfile):
    
         ec = EC.load_key(keyfile)
         
-        good = ec.verify_dsa_asn1(token, nvpair["h"])
+        good = ec.verify_dsa_asn1(token, attrs["h"][0])
         if (good ==1):
-            logger.info("verification done: %s", nvpair["s"])
+            logger.info("verification done: %s", attrs["s"][0])
             return True
         else:
-            logger.info("verification fail: %s", nvpair["s"])
+            logger.info("verification fail: %s", attrs["s"][0])
             return False 
              
     elif (authn.startswith("authn_jwt:")):
