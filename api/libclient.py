@@ -26,7 +26,7 @@ def assert_authnz():
 
     s.connect(LOCAL_PATH)
 
-    s.send("GET /authz HTTP/1.0\r\nHost:localhost\r\n\r\n");
+    s.send("GET /authz?srvs=foo HTTP/1.0\r\nHost:localhost\r\n\r\n");
 
     data = s.recv(8192)
 

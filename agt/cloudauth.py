@@ -43,6 +43,8 @@ class CloudAuthHTTPReqHandler(SimpleHTTPRequestHandler):
 
     def service(self):
 
+        #TODO request body processing
+
         logger.info("path = %s", self.path)
 
         if (self.path.startswith("/authn")) :
@@ -56,12 +58,18 @@ class CloudAuthHTTPReqHandler(SimpleHTTPRequestHandler):
             self.connection.send(httphd + authn)
 
         elif (self.path.startswith("/authz")) :
-
+            # /authz?srvs=foo
             proc = self.peer_proc()
 
             authn = libauthn.assert_authn(proc, SIG_KEY_FILE)
-            
-            authz = libauthn.assert_authz(authn, SIG_KEY_FILE, IDP_SRVR_URL)
+           
+            qstr = self.path.find("?")
+            if (qstr > 0):
+                qstr = self.path[qstr + 1 :]
+            else:
+                qstr = None
+ 
+            authz = libauthn.askfor_authz(authn, SIG_KEY_FILE, IDP_SRVR_URL, qstr)
 
             httphd = HTTP_RESP_HDRS % {"status" : "200 OK", "ctype" : "text/authz", "clen" : str(len(authz))}
 
@@ -83,9 +91,12 @@ class CloudAuthHTTPReqHandler(SimpleHTTPRequestHandler):
             pass
 
         elif (self.path.startswith("/roles")) :
+            # /roles?token_type=authn_qst&<token>&srvs=foo
+            authz = libauthz.assert_authz(self.path[self.path.find("?") + 1 :])
 
-            pass
-            #libauthz.assert_authn()
+            httphd = HTTP_RESP_HDRS % {"status" : "200 OK", "ctype" : "text/authz", "clen" : str(len(authz))}
+
+            self.connection.send(httphd + authz)
 
     def peer_proc(self):
 

@@ -12,6 +12,7 @@ import time
 import datetime
 import json 
 import urlparse
+import urllib2
 
 import sock2proc
 
@@ -250,10 +251,24 @@ def assert_authn(proc, keyfile, tkn_type = "qst", fmt = SUBJECT_AUTH, validity=3
 
     return token 
 
-def assert_authz(authn, authn_keyfile, idpurl, *services):
+def askfor_authz(authn, authn_keyfile, idpurl, qstr):
 
-    authz = authn
+    if (authn.startswith("authn_qst:")):
+        idpurl += "?token_type=authn_qst"
+        idpurl += "&" + authn[len("authn_qst:"):]
+    elif (authn.startswith("authn_jmt:")):
+        idpurl += "?token_type=authn_jmt"
+        idpurl += "&token_val=" + authn[len("authn_jmt:"):]
+    else:
+        logger.info("unsupported authn token %s", authn)
+        return authn
 
-    #TODO call idp server to get authz
- 
-    return authz    
+    idpurl += "&" + qstr # target service added here
+
+    # /roles?token_type=authn_qst&<token>&srvs=foo
+
+    logger.info("idpurl: %s", idpurl)
+
+    f = urllib2.urlopen(idpurl)
+    return f.read()
+

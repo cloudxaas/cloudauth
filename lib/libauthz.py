@@ -20,8 +20,28 @@ from M2Crypto import EVP, EC, util
 
 logger = logging.getLogger("libauthz")
 
-def assert_authz(authn, authn_keyfile, idpurl, *services):
+def assert_authz(qstr, authn_cert = None, authz_key = None):
 
+    #token_type=authn_qst&<token>&srvs=foo
+
+    logger.info(qstr)
+
+    tkn_s = qstr.find("&") + 1
+    tkn_e = qstr.find("&srvs=")
+
+    ttype = qstr[qstr.find("=") + 1 : tkn_s -1]
+ 
+    token = qstr[tkn_s:tkn_e]
+
+    #TODO get cert from request body and modify verify_authn to use cert
+    if (libauthn.verify_authn(ttype + ":" + token, "cnf/ssh_host_ecdsa_key") == False):
+        return authn
+
+    logger.info("TODO: build and sign authz token")
+
+    return token # TODO    
+
+    """
     authz = authn
 
     # verify authn token
@@ -49,6 +69,7 @@ def assert_authz(authn, authn_keyfile, idpurl, *services):
 
 
     return authz
+    """
 
 def assert_roles(user):
     """
