@@ -98,11 +98,40 @@ def verify_authn(authn, keyfile):
             return True
         else:
             logger.info("verification fail: %s", nvpair["s"])
-            return True
+            return False 
              
     elif (authn.startswith("authn_jwt:")):
-        pass
+        
+        authn = authn.lstrip("authn_jwt:")
 
+        head, body, sign = authn.split(".", 2)
+
+        if (len(sign) % 3 != 0) :
+            sign += "=" * (3 - len(sign) % 3)  # add pading if needed
+        sign = base64.urlsafe_b64decode(sign)
+
+        if (len(head) % 3 != 0) :
+            hdr = head + "=" * (3 - len(head) % 3)  # add pading if needed
+         
+        if (len(body) % 3 != 0) :
+            bdy = body + "=" * (3 - len(body) % 3)  # add pading if needed
+
+        hdr = base64.urlsafe_b64decode(hdr)
+        bdy = base64.urlsafe_b64decode(bdy)
+
+        ec = EC.load_key(keyfile)
+
+        md = EVP.MessageDigest('sha256')
+        md.update(head +"." + body)
+
+        good = ec.verify_dsa_asn1(md.final(), sign)
+        if (good ==1):
+            logger.info("verification done")
+        else:
+            logger.info("verification fail")
+            return False 
+            
+        return True
 
 def assert_authz(authn, *services):
 
@@ -171,6 +200,8 @@ def assert_authn_jwt(proc, keyfile, fmt = SUBJECT_AUTH, validity=300, challenge=
 
     logger.info(ret)
 
+    verify_authn(ret, keyfile) #TODO: remove
+
     return ret
 
 def assert_authn_qst(proc, keyfile, fmt = SUBJECT_AUTH, validity=300, challenge=None):
@@ -217,5 +248,5 @@ def assert_authn_qst(proc, keyfile, fmt = SUBJECT_AUTH, validity=300, challenge=
  
 def assert_authn(proc, keyfile, fmt = SUBJECT_AUTH, validity=300, challenge=None):
 
-    return assert_authn_qst(proc, keyfile, fmt, validity, challenge)
+    return assert_authn_jwt(proc, keyfile, fmt, validity, challenge)
 
