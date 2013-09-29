@@ -16,7 +16,7 @@ import urllib2
 
 import sock2proc
 
-from M2Crypto import EVP, EC, util
+from M2Crypto import m2, EVP, EC, util, BIO, X509
 
 logger = logging.getLogger("libauthn")
 
@@ -54,7 +54,30 @@ def time_left(v) :
        
     return expiry - time.time()
 
-def verify_authn(authn, keyfile):
+def verify_authn(authn, cert):
+
+    logger.info("<%s>", cert)
+
+    x509 = X509.load_cert_string(cert)
+
+    logger.info("<%s>", x509.get_subject())
+
+    pkey = x509.get_pubkey() #EVP.PKEY
+
+    ec_ptr = m2.EVP_PKEY_get1_EC(pkey) 
+
+    """
+        ec_ptr = m2.pkey_get1_ec(pkey) # need to add this to SWIG
+        
+        ec = EC.EC_pub(ec_ptr, 1)
+
+        return verify_authn_pkey(authn, pubk)
+
+    """
+
+    return verify_authn_pkey(authn, pubk)
+
+def verify_authn_pkey(authn, pkey):
 
     if (authn.startswith("authn_qst:")):
     
@@ -95,10 +118,8 @@ def verify_authn(authn, keyfile):
         md = EVP.MessageDigest('sha1')
         md.update(token)        
         token = md.final()
-   
-        ec = EC.load_key(keyfile)
         
-        good = ec.verify_dsa_asn1(token, attrs["h"][0])
+        good = pkey.verify_dsa_asn1(token, attrs["h"][0])
         if (good ==1):
             logger.info("verification done: %s", attrs["s"][0])
             return True
@@ -136,12 +157,10 @@ def verify_authn(authn, keyfile):
             logger.info("verification fail: unsupported algo %s", hdr["alg"])
             return False
 
-        ec = EC.load_key(keyfile)
-
         md = EVP.MessageDigest('sha256')
         md.update(head +"." + body)
 
-        good = ec.verify_dsa_asn1(md.final(), sign)
+        good = pkey.verify_dsa_asn1(md.final(), sign)
         if (good ==1):
             logger.info("verification done")
         else:
