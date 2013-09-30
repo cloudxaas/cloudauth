@@ -62,13 +62,11 @@ def verify_authn(authn, cert):
 
     logger.info("<%s>", x509.get_subject())
 
+    # TODO verify cert
+
     pkey = x509.get_pubkey() #EVP.PKEY
-
-    der = pkey.as_der()
-
-    pubk = EC.pub_key_from_der(der)
  
-    return verify_authn_pkey(authn, pubk)
+    return verify_authn_pkey(authn, pkey)
 
 def verify_authn_pkey(authn, pkey):
 
@@ -112,7 +110,10 @@ def verify_authn_pkey(authn, pkey):
         md.update(token)        
         token = md.final()
         
-        good = pkey.verify_dsa_asn1(token, attrs["h"][0])
+        der = pkey.as_der()
+        pubk = EC.pub_key_from_der(der)
+
+        good = pubk.verify_dsa_asn1(token, attrs["h"][0])
         if (good ==1):
             logger.info("verification done: %s", attrs["s"][0])
             return True
@@ -153,7 +154,10 @@ def verify_authn_pkey(authn, pkey):
         md = EVP.MessageDigest('sha256')
         md.update(head +"." + body)
 
-        good = pkey.verify_dsa_asn1(md.final(), sign)
+        der = pkey.as_der()
+        pubk = EC.pub_key_from_der(der)
+
+        good = pubk.verify_dsa_asn1(md.final(), sign)
         if (good ==1):
             logger.info("verification done")
         else:
