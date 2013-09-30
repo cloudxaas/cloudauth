@@ -64,17 +64,10 @@ def verify_authn(authn, cert):
 
     pkey = x509.get_pubkey() #EVP.PKEY
 
-    ec_ptr = m2.EVP_PKEY_get1_EC(pkey) 
+    der = pkey.as_der()
 
-    """
-        ec_ptr = m2.pkey_get1_ec(pkey) # need to add this to SWIG
-        
-        ec = EC.EC_pub(ec_ptr, 1)
-
-        return verify_authn_pkey(authn, pubk)
-
-    """
-
+    pubk = EC.pub_key_from_der(der)
+ 
     return verify_authn_pkey(authn, pubk)
 
 def verify_authn_pkey(authn, pkey):
