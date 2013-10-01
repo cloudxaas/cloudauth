@@ -35,7 +35,12 @@ def assert_authz(qstr, authn_cert, authz_keypem = None):
 
     ttype = qstr[qstr.find("=") + 1 : tkn_s -1]
  
-    token = qstr[tkn_s:tkn_e]
+    if (tkn_e != -1) :
+        token = qstr[tkn_s:tkn_e]
+        services = urlparse.parse_qs(qstr[tkn_e + 1 :])["srvs"]
+    else:
+        token = qstr[tkn_s:]
+        services = ["OMNI"]
 
     if (libauthn.verify_authn(ttype + ":" + token, authn_cert) == False):
         return qstr 
@@ -45,10 +50,6 @@ def assert_authz(qstr, authn_cert, authz_keypem = None):
     tkn_attrs = urlparse.parse_qs(token)
 
     subject = tkn_attrs["s"][0]
-
-    services = urlparse.parse_qs(qstr[tkn_e + 1 :])["srvs"]
-
-    logger.info("services %s", services)
 
     authz_tokens = ""
 
@@ -74,21 +75,6 @@ def assert_authz(qstr, authn_cert, authz_keypem = None):
     logger.info(authz_tokens)
 
     return authz_tokens 
-    
-
-    """
-    #TODO one token for each service
-    # get service agnostic roles    
-
-    # get service specific roles       
-    for svs in services:
-        pass 
-
-    # one token per service for perf
-
-
-    return authz
-    """
 
 def assert_roles(subject, service = None):
 

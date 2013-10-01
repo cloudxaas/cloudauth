@@ -80,7 +80,7 @@ class CloudAuthHTTPReqHandler(SimpleHTTPRequestHandler):
         
         elif (self.path.startswith("/cert")) :
 
-            cert = libauthn.file2buf(TLS_CRT_FILE)  
+            cert = libauthn.file2buf(SIG_CRT_FILE)  
 
             httphd = HTTP_RESP_HDRS % {"status" : "200 OK", "ctype" : "text/cert", "clen" : str(len(cert))}
 

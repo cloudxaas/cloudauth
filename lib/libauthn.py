@@ -184,7 +184,7 @@ def verify_authn_pkey(authn, pkey):
 
 def assert_authn_jwt(proc, keypem, fmt = SUBJECT_AUTH, validity=300, challenge=None):
 
-    hdr = '{"alg":"es256","x5u":""}'
+    hdr = '{"alg":"es256","x5u":"/cert"}'
 
     logger.info("authnz header: %s", hdr)
 
@@ -236,7 +236,7 @@ def assert_authn_qst(proc, keypem, fmt = SUBJECT_AUTH, validity=300, challenge=N
 
     m += "&a=11"
     m += "&k=url"
-     
+ 
     sig = hash_n_sign(m, "sha1", keypem) 
     
     ret = "authn_qst:" + m + "&h=" + base64.urlsafe_b64encode(sig).rstrip("=")
@@ -268,7 +268,8 @@ def askfor_authz(authn, certpem, idpurl, qstr):
         logger.info("unsupported authn token %s", authn)
         return authn
 
-    idpurl += "&" + qstr # target service added here
+    if (qstr != None and qstr != "") :
+        idpurl += "&" + qstr # target service added here
 
     # /roles?token_type=authn_qst&<token>&srvs=foo
 
