@@ -20,11 +20,15 @@ from M2Crypto import EVP, EC, util
 
 logger = logging.getLogger("libauthz")
 
-def assert_authz(qstr, authn_cert, authz_key = None):
+def assert_authz(qstr, authn_cert, authz_keypem = None):
 
-    #token_type=authn_qst&<token>&srvs=foo
+    #qstr: token_type=authn_qst&<token>&srvs=foo
 
     logger.info(qstr)
+
+    if (qstr.startswith("token_type=authn_qst") == False):
+        logger.error("unsupported authn token: %s", qstr)
+        return qstr
 
     tkn_s = qstr.find("&") + 1
     tkn_e = qstr.find("&srvs=")
@@ -34,30 +38,46 @@ def assert_authz(qstr, authn_cert, authz_key = None):
     token = qstr[tkn_s:tkn_e]
 
     if (libauthn.verify_authn(ttype + ":" + token, authn_cert) == False):
-        return authn
+        return qstr 
 
-    logger.info("TODO: build and sign authz token")
+    token = token[0:token.find("&h=")] #strip of authn sig
 
-    return token # TODO    
+    tkn_attrs = urlparse.parse_qs(token)
+
+    subject = tkn_attrs["s"][0]
+
+    services = urlparse.parse_qs(qstr[tkn_e + 1 :])["srvs"]
+
+    logger.info("services %s", services)
+
+    authz_tokens = ""
+
+    for i in range(0, len(services)):
+
+        srvs = services[i]
+
+        stkn = token + "&sv=" + srvs 
+
+        roles = assert_roles(subject, srvs)
+
+        logger.info("roles for %s %s: %s", subject, srvs, roles)
+     
+        for i in range(0, len(roles)):
+            stkn += "&role=" + roles[i]
+
+        sig = libauthn.hash_n_sign(stkn, "sha1", authz_keypem) 
+
+        stkn = "authz_qst:" + stkn + "&h=" + base64.urlsafe_b64encode(sig).rstrip("=")
+
+        authz_tokens += stkn + "\r\n"        
+
+    logger.info(authz_tokens)
+
+    return authz_tokens 
+    
 
     """
-    authz = authn
-
-    # verify authn token
-
-    if (libauthn.verify_authn(authn, authn_keyfile) == False):
-        return authn
-
-    if (authn.startswith("authn_qst:")):
-    
-        authn = authn.lstrip("authn_qst:")
-
-        attrs = urlparse.parse_qs(authn)
-
-        app, host, usr = attrs["s"][0].split("~", 2)
-
-        logger.info("%s %s %s", app, host, usr)
-    
+    #TODO one token for each service
     # get service agnostic roles    
 
     # get service specific roles       
@@ -70,10 +90,12 @@ def assert_authz(qstr, authn_cert, authz_key = None):
     return authz
     """
 
-def assert_roles(user):
-    """
-    test function to get user's group info 
-    """
+def assert_roles(subject, service = None):
+
+    # test function to get user's group info 
+
+    app, host, user = subject.split("~", 2)
+
     groups = [g.gr_name for g in grp.getgrall() if user in g.gr_mem]
     gid = pwd.getpwnam(user).pw_gid
     groups.append(grp.getgrgid(gid).gr_name)

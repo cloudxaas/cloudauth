@@ -52,7 +52,7 @@ class CloudAuthHTTPReqHandler(SimpleHTTPRequestHandler):
 
             proc = self.peer_proc()
 
-            authn = libauthn.assert_authn(proc, SIG_KEY_FILE)
+            authn = libauthn.assert_authn(proc, libauthn.file2buf(SIG_KEY_FILE))
             
             httphd = HTTP_RESP_HDRS % {"status" : "200 OK", "ctype" : "text/authn", "clen" : str(len(authn))}
 
@@ -62,16 +62,15 @@ class CloudAuthHTTPReqHandler(SimpleHTTPRequestHandler):
             # /authz?srvs=foo
             proc = self.peer_proc()
 
-            authn = libauthn.assert_authn(proc, SIG_KEY_FILE)
+            authn = libauthn.assert_authn(proc, libauthn.file2buf(SIG_KEY_FILE))
            
             qstr = self.path.find("?")
             if (qstr > 0):
                 qstr = self.path[qstr + 1 :]
             else:
                 qstr = None
- 
-            with open(SIG_CRT_FILE, 'rb') as fh:
-                cert = fh.read()
+
+            cert = libauthn.file2buf(SIG_CRT_FILE)  
  
             authz = libauthn.askfor_authz(authn, cert, IDP_SRVR_URL, qstr)
 
@@ -81,10 +80,7 @@ class CloudAuthHTTPReqHandler(SimpleHTTPRequestHandler):
         
         elif (self.path.startswith("/cert")) :
 
-            cert = ""
-
-            with open(TLS_CRT_FILE, 'rb') as fh:
-                cert = fh.read()
+            cert = libauthn.file2buf(TLS_CRT_FILE)  
 
             httphd = HTTP_RESP_HDRS % {"status" : "200 OK", "ctype" : "text/cert", "clen" : str(len(cert))}
 
@@ -99,7 +95,7 @@ class CloudAuthHTTPReqHandler(SimpleHTTPRequestHandler):
             # body is client/host cert for authn verification
             size = int(self.headers.getheader('content-length'))
             authn_cert = self.rfile.read(size)
-            authz = libauthz.assert_authz(self.path[self.path.find("?") + 1 :], authn_cert)
+            authz = libauthz.assert_authz(self.path[self.path.find("?") + 1 :], authn_cert, libauthn.file2buf(AuZ_KEY_FILE))
 
             httphd = HTTP_RESP_HDRS % {"status" : "200 OK", "ctype" : "text/authz", "clen" : str(len(authz))}
 

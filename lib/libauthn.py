@@ -39,6 +39,11 @@ ROLEATT_AUTH   = 0x0100 #az
 
 MY_EPOCH = time.mktime(datetime.datetime(2013,1,1,0,0).timetuple())
 
+def file2buf(fname):
+    with open(fname, 'rb') as fh:
+         buf = fh.read()
+    return buf
+
 def base64url_decode(value) :
 
     if (len(value) % 3 != 0) :
@@ -54,11 +59,35 @@ def time_left(v) :
        
     return expiry - time.time()
 
-def verify_authn(authn, cert):
+def hash_n_sign(data, hash_algo, keypem) :
 
-    logger.info("<%s>", cert)
+    md = EVP.MessageDigest(hash_algo)
 
-    x509 = X509.load_cert_string(cert)
+    md.update(data)
+
+    h = md.final()
+
+    bio = BIO.MemoryBuffer(keypem)
+    ec = EC.load_key_bio(bio)
+
+    return ec.sign_dsa_asn1(h)
+
+def sig_verify(data, sig, hash_algo, pkey) :
+
+    md = EVP.MessageDigest(hash_algo)
+    md.update(data)        
+    hash = md.final()
+        
+    der = pkey.as_der()
+    pubk = EC.pub_key_from_der(der)
+
+    return pubk.verify_dsa_asn1(hash, sig)
+
+def verify_authn(authn, certpem):
+
+    logger.info("<%s>", certpem)
+
+    x509 = X509.load_cert_string(certpem)
 
     logger.info("<%s>", x509.get_subject())
 
@@ -106,14 +135,7 @@ def verify_authn_pkey(authn, pkey):
             logger.info("verification fail: unsupported algo %s", attrs["a"][0])
             return False
 
-        md = EVP.MessageDigest('sha1')
-        md.update(token)        
-        token = md.final()
-        
-        der = pkey.as_der()
-        pubk = EC.pub_key_from_der(der)
-
-        good = pubk.verify_dsa_asn1(token, attrs["h"][0])
+        good = sig_verify(token, attrs["h"][0], "sha1", pkey) 
         if (good ==1):
             logger.info("verification done: %s", attrs["s"][0])
             return True
@@ -151,13 +173,7 @@ def verify_authn_pkey(authn, pkey):
             logger.info("verification fail: unsupported algo %s", hdr["alg"])
             return False
 
-        md = EVP.MessageDigest('sha256')
-        md.update(head +"." + body)
-
-        der = pkey.as_der()
-        pubk = EC.pub_key_from_der(der)
-
-        good = pubk.verify_dsa_asn1(md.final(), sign)
+        good = sig_verify(head +"." + body, sign, "sha256", pkey)
         if (good ==1):
             logger.info("verification done")
         else:
@@ -166,7 +182,7 @@ def verify_authn_pkey(authn, pkey):
         
         return True
 
-def assert_authn_jwt(proc, keyfile, fmt = SUBJECT_AUTH, validity=300, challenge=None):
+def assert_authn_jwt(proc, keypem, fmt = SUBJECT_AUTH, validity=300, challenge=None):
 
     hdr = '{"alg":"es256","x5u":""}'
 
@@ -192,31 +208,17 @@ def assert_authn_jwt(proc, keyfile, fmt = SUBJECT_AUTH, validity=300, challenge=
 
     logger.info("anthnz payload: %s", bdy)
 
-    md = EVP.MessageDigest('sha256')
-
     pkt = base64.urlsafe_b64encode(hdr).rstrip("=") + "." + base64.urlsafe_b64encode(bdy).rstrip("=")
 
-    md.update(pkt)
-
-    h = md.final()
-   
-    ec = EC.load_key(keyfile)
-
-    sig = ec.sign_dsa_asn1(h)
+    sig = hash_n_sign(pkt, "sha256", keypem) 
     
-    """
-    good = ec.verify_dsa_asn1(h, sig)
-    if (good ==1):
-        logger.info("verified: %s", len(sig))
-    """
-
     ret = "authn_jwt:" + pkt + "." + base64.urlsafe_b64encode(sig).rstrip("=")
 
     logger.info(ret)
 
     return ret
 
-def assert_authn_qst(proc, keyfile, fmt = SUBJECT_AUTH, validity=300, challenge=None):
+def assert_authn_qst(proc, keypem, fmt = SUBJECT_AUTH, validity=300, challenge=None):
 
     #uuid is an overkill, hence time-in-microsec and proc.pid seperated by '-'
     #m = "i=" + hex(uuid.uuid4()).lstrip("0x")
@@ -235,39 +237,26 @@ def assert_authn_qst(proc, keyfile, fmt = SUBJECT_AUTH, validity=300, challenge=
     m += "&a=11"
     m += "&k=url"
      
-    md = EVP.MessageDigest('sha1')
-    md.update(m)        
-   
-    h = md.final()
-   
-    ec = EC.load_key(keyfile)
-
-    sig = ec.sign_dsa_asn1(h)
+    sig = hash_n_sign(m, "sha1", keypem) 
     
-    """
-    good = ec.verify_dsa_asn1(h, sig)
-    if (good ==1):
-        logger.info("verified: %s", len(sig))
-    """
-
     ret = "authn_qst:" + m + "&h=" + base64.urlsafe_b64encode(sig).rstrip("=")
 
     logger.info(ret)
 
     return ret
  
-def assert_authn(proc, keyfile, tkn_type = "qst", fmt = SUBJECT_AUTH, validity=300, challenge=None):
+def assert_authn(proc, keypem, tkn_type = "qst", fmt = SUBJECT_AUTH, validity=300, challenge=None):
 
     if (tkn_type == "qst"):
-        token = assert_authn_qst(proc, keyfile, fmt, validity, challenge)
+        token = assert_authn_qst(proc, keypem, fmt, validity, challenge)
     elif (tkn_type == "jwt"):
-        token = assert_authn_jwt(proc, keyfile, fmt, validity, challenge)
+        token = assert_authn_jwt(proc, keypem, fmt, validity, challenge)
     else:
         return None
 
     return token 
 
-def askfor_authz(authn, cert, idpurl, qstr):
+def askfor_authz(authn, certpem, idpurl, qstr):
 
     if (authn.startswith("authn_qst:")):
         idpurl += "?token_type=authn_qst"
@@ -285,8 +274,8 @@ def askfor_authz(authn, cert, idpurl, qstr):
 
     logger.info("idpurl: %s", idpurl)
 
-    req = urllib2.Request(idpurl, cert)
-    req.add_header('Content-Length', '%d' % len(cert))
+    req = urllib2.Request(idpurl, certpem)
+    req.add_header('Content-Length', '%d' % len(certpem))
     req.add_header('Content-Type', 'application/octet-stream')
     f = urllib2.urlopen(req)
 
