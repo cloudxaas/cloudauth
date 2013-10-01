@@ -27,6 +27,7 @@ LOCAL_PATH = tempfile.gettempdir() + "/cloudauth.sk"
 IDP_SRVR_URL = "https://localhost:6443/roles"
 
 SIG_KEY_FILE = "cnf/ssh_host_ecdsa_key"
+SIG_CRT_FILE = "cnf/ssh_host_ecdsa_key.crt"
 AuZ_KEY_FILE = "cnf/ssh_host_ecdsa_key"
 
 TLS_KEY_FILE = "cnf/ssh_host_ecdsa_key"
@@ -69,7 +70,10 @@ class CloudAuthHTTPReqHandler(SimpleHTTPRequestHandler):
             else:
                 qstr = None
  
-            authz = libauthn.askfor_authz(authn, SIG_KEY_FILE, IDP_SRVR_URL, qstr)
+            with open(SIG_CRT_FILE, 'rb') as fh:
+                cert = fh.read()
+ 
+            authz = libauthn.askfor_authz(authn, cert, IDP_SRVR_URL, qstr)
 
             httphd = HTTP_RESP_HDRS % {"status" : "200 OK", "ctype" : "text/authz", "clen" : str(len(authz))}
 
@@ -92,7 +96,10 @@ class CloudAuthHTTPReqHandler(SimpleHTTPRequestHandler):
 
         elif (self.path.startswith("/roles")) :
             # /roles?token_type=authn_qst&<token>&srvs=foo
-            authz = libauthz.assert_authz(self.path[self.path.find("?") + 1 :])
+            # body is client/host cert for authn verification
+            size = int(self.headers.getheader('content-length'))
+            authn_cert = self.rfile.read(size)
+            authz = libauthz.assert_authz(self.path[self.path.find("?") + 1 :], authn_cert)
 
             httphd = HTTP_RESP_HDRS % {"status" : "200 OK", "ctype" : "text/authz", "clen" : str(len(authz))}
 

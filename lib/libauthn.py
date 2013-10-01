@@ -267,7 +267,7 @@ def assert_authn(proc, keyfile, tkn_type = "qst", fmt = SUBJECT_AUTH, validity=3
 
     return token 
 
-def askfor_authz(authn, authn_keyfile, idpurl, qstr):
+def askfor_authz(authn, cert, idpurl, qstr):
 
     if (authn.startswith("authn_qst:")):
         idpurl += "?token_type=authn_qst"
@@ -285,6 +285,10 @@ def askfor_authz(authn, authn_keyfile, idpurl, qstr):
 
     logger.info("idpurl: %s", idpurl)
 
-    f = urllib2.urlopen(idpurl)
+    req = urllib2.Request(idpurl, cert)
+    req.add_header('Content-Length', '%d' % len(cert))
+    req.add_header('Content-Type', 'application/octet-stream')
+    f = urllib2.urlopen(req)
+
     return f.read()
 
