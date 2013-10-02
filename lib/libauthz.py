@@ -41,7 +41,7 @@ def assert_authz(qstr, authn_cert, authz_keypem = None):
 
     logger.info("token before decode: %s", token)
 
-    token = base64.urlsafe_b64decode(token)
+    token = libauthn.base64url_decode(token)
 
     logger.info("token after decode: %s", token)
 

@@ -46,8 +46,7 @@ def file2buf(fname):
 
 def base64url_decode(value) :
 
-    if (len(value) % 3 != 0) :
-        value += "=" * (3 - len(value) % 3)  # add pading if needed
+    value += "=" * (len(value)%4)
 
     return base64.urlsafe_b64decode(value)
 
@@ -284,7 +283,7 @@ def askfor_authz(authn, certpem, idpurl, qstr, body):
 
     if (authn.startswith("authn_qst:")):
         idpurl += "?token_type=authn_qst"
-        idpurl += "&token_val=" + base64.urlsafe_b64encode(authn[len("authn_qst:"):])
+        idpurl += "&token_val=" + base64.urlsafe_b64encode(authn[len("authn_qst:"):]).rstrip("=")
     elif (authn.startswith("authn_jmt:")):
         idpurl += "?token_type=authn_jmt"
         idpurl += "&token_val=" + authn[len("authn_jmt:"):]
