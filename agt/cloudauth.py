@@ -48,11 +48,14 @@ class CloudAuthHTTPReqHandler(SimpleHTTPRequestHandler):
 
         logger.info("path = %s", self.path)
 
+        qstr = self.req_qstr();
+        body = self.req_body();
+
         if (self.path.startswith("/authn")) :
 
             proc = self.peer_proc()
 
-            authn = libauthn.assert_authn(proc, libauthn.file2buf(SIG_KEY_FILE))
+            authn = libauthn.assert_authn(proc, libauthn.file2buf(SIG_KEY_FILE), qstr, body)
             
             httphd = HTTP_RESP_HDRS % {"status" : "200 OK", "ctype" : "text/authn", "clen" : str(len(authn))}
 
@@ -62,17 +65,11 @@ class CloudAuthHTTPReqHandler(SimpleHTTPRequestHandler):
             # /authz?srvs=foo
             proc = self.peer_proc()
 
-            authn = libauthn.assert_authn(proc, libauthn.file2buf(SIG_KEY_FILE))
+            authn = libauthn.assert_authn(proc, libauthn.file2buf(SIG_KEY_FILE), qstr, body)
            
-            qstr = self.path.find("?")
-            if (qstr > 0):
-                qstr = self.path[qstr + 1 :]
-            else:
-                qstr = None
-
             cert = libauthn.file2buf(SIG_CRT_FILE)  
  
-            authz = libauthn.askfor_authz(authn, cert, IDP_SRVR_URL, qstr)
+            authz = libauthn.askfor_authz(authn, cert, IDP_SRVR_URL, qstr, body)
 
             httphd = HTTP_RESP_HDRS % {"status" : "200 OK", "ctype" : "text/authz", "clen" : str(len(authz))}
 
@@ -93,9 +90,7 @@ class CloudAuthHTTPReqHandler(SimpleHTTPRequestHandler):
         elif (self.path.startswith("/roles")) :
             # /roles?token_type=authn_qst&<token>&srvs=foo
             # body is client/host cert for authn verification
-            size = int(self.headers.getheader('content-length'))
-            authn_cert = self.rfile.read(size)
-            authz = libauthz.assert_authz(self.path[self.path.find("?") + 1 :], authn_cert, libauthn.file2buf(AuZ_KEY_FILE))
+            authz = libauthz.assert_authz(qstr, body, libauthn.file2buf(AuZ_KEY_FILE))
 
             httphd = HTTP_RESP_HDRS % {"status" : "200 OK", "ctype" : "text/authz", "clen" : str(len(authz))}
 
@@ -127,7 +122,25 @@ class CloudAuthHTTPReqHandler(SimpleHTTPRequestHandler):
 
         self.is_post = True 
         self.service()
- 
+    
+    def req_body(self):
+
+        size = self.headers.getheader('content-length')
+        if (size == None):
+            return ""
+
+        size = int(size)
+
+        return self.rfile.read(size)
+
+    def req_qstr(self):
+
+        idx = self.path.find("?") 
+        if (idx == -1) :
+            return "" 
+
+        return self.path[idx + 1 :]
+
 class HttpsThread (threading.Thread):
 
     def __init__(self, port, isTCP):

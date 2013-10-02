@@ -182,7 +182,7 @@ def verify_authn_pkey(authn, pkey):
         
         return True
 
-def assert_authn_jwt(proc, keypem, fmt = SUBJECT_AUTH, validity=300, challenge=None):
+def assert_authn_jwt(proc, keypem, ctx = SUBJECT_AUTH, validity=300, challenge=None):
 
     hdr = '{"alg":"es256","x5u":"/cert"}'
 
@@ -198,7 +198,7 @@ def assert_authn_jwt(proc, keypem, fmt = SUBJECT_AUTH, validity=300, challenge=N
     
     bdy += ',"v":"' + str(hex(int(time.time() - MY_EPOCH))).lstrip("0x") + "~" +  hex(validity).lstrip("0x") +'"'
 
-    if (fmt & APP_BIN_AUTH):    
+    if (ctx & APP_BIN_AUTH):    
         bdy += ',"b":"'+ proc.binh + '"'
 
     if (challenge != None):
@@ -218,7 +218,7 @@ def assert_authn_jwt(proc, keypem, fmt = SUBJECT_AUTH, validity=300, challenge=N
 
     return ret
 
-def assert_authn_qst(proc, keypem, fmt = SUBJECT_AUTH, validity=300, challenge=None):
+def assert_authn_qst(proc, keypem, ctx = SUBJECT_AUTH, validity=300, challenge=None):
 
     #uuid is an overkill, hence time-in-microsec and proc.pid seperated by '-'
     #m = "i=" + hex(uuid.uuid4()).lstrip("0x")
@@ -228,14 +228,14 @@ def assert_authn_qst(proc, keypem, fmt = SUBJECT_AUTH, validity=300, challenge=N
     
     m += "&v=" + str(hex(int(time.time() - MY_EPOCH))).lstrip("0x") + "~" +  hex(validity).lstrip("0x")
 
-    if (fmt & APP_BIN_AUTH):    
+    if (ctx & APP_BIN_AUTH):    
         m += "&b=" + proc.binh
 
     if (challenge != None):
        	m += "&r=" + str(challenge)
 
     m += "&a=11"
-    m += "&k=url"
+    m += "&k=%2Fcert"
  
     sig = hash_n_sign(m, "sha1", keypem) 
     
@@ -245,22 +245,46 @@ def assert_authn_qst(proc, keypem, fmt = SUBJECT_AUTH, validity=300, challenge=N
 
     return ret
  
-def assert_authn(proc, keypem, tkn_type = "qst", fmt = SUBJECT_AUTH, validity=300, challenge=None):
+def assert_authn(proc, keypem, qstr, body) :
+
+    attrs = urlparse.parse_qs(qstr)
+
+    try:
+        tkn_type = attrs["token_type"][0]
+    except KeyError:
+        tkn_type = "qst"
+
+    try:
+        ctx = attrs["authn_type"][0]
+        ctx = int(ctx)
+    except KeyError:
+        ctx = SUBJECT_AUTH
+
+    try:
+        validity = attrs["validity"][0]
+        validity = int(validity)
+    except KeyError:
+        validity = 300 
+
+    try:
+        challenge = attrs["challenge"][0]
+    except KeyError:
+        challenge = None 
 
     if (tkn_type == "qst"):
-        token = assert_authn_qst(proc, keypem, fmt, validity, challenge)
+        token = assert_authn_qst(proc, keypem, ctx, validity, challenge)
     elif (tkn_type == "jwt"):
-        token = assert_authn_jwt(proc, keypem, fmt, validity, challenge)
+        token = assert_authn_jwt(proc, keypem, ctx, validity, challenge)
     else:
         return None
 
     return token 
 
-def askfor_authz(authn, certpem, idpurl, qstr):
+def askfor_authz(authn, certpem, idpurl, qstr, body):
 
     if (authn.startswith("authn_qst:")):
         idpurl += "?token_type=authn_qst"
-        idpurl += "&" + authn[len("authn_qst:"):]
+        idpurl += "&token_val=" + base64.urlsafe_b64encode(authn[len("authn_qst:"):])
     elif (authn.startswith("authn_jmt:")):
         idpurl += "?token_type=authn_jmt"
         idpurl += "&token_val=" + authn[len("authn_jmt:"):]
@@ -271,7 +295,7 @@ def askfor_authz(authn, certpem, idpurl, qstr):
     if (qstr != None and qstr != "") :
         idpurl += "&" + qstr # target service added here
 
-    # /roles?token_type=authn_qst&<token>&srvs=foo
+    # /roles?token_type=qst&token_val=b64urlsafe&srvs=foo&srvs=bar
 
     logger.info("idpurl: %s", idpurl)
 

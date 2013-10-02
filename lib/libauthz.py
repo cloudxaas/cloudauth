@@ -22,25 +22,33 @@ logger = logging.getLogger("libauthz")
 
 def assert_authz(qstr, authn_cert, authz_keypem = None):
 
-    #qstr: token_type=authn_qst&<token>&srvs=foo
+    #qstr: token_type=qst&token_val=b64urlsafe&srvs=foo&srvs=bar
+    #qstr: token_type=jmt&token_val=jmt-token&srvs=foo&srvs=bar
 
     logger.info(qstr)
 
-    if (qstr.startswith("token_type=authn_qst") == False):
+    attrs = urlparse.parse_qs(qstr)
+
+    #base64url_decode
+
+    ttype = attrs["token_type"][0]
+
+    if (ttype != "authn_qst"):
         logger.error("unsupported authn token: %s", qstr)
         return qstr
 
-    tkn_s = qstr.find("&") + 1
-    tkn_e = qstr.find("&srvs=")
+    token = attrs["token_val"][0]
 
-    ttype = qstr[qstr.find("=") + 1 : tkn_s -1]
- 
-    if (tkn_e != -1) :
-        token = qstr[tkn_s:tkn_e]
-        services = urlparse.parse_qs(qstr[tkn_e + 1 :])["srvs"]
-    else:
-        token = qstr[tkn_s:]
-        services = ["OMNI"]
+    logger.info("token before decode: %s", token)
+
+    token = base64.urlsafe_b64decode(token)
+
+    logger.info("token after decode: %s", token)
+
+    try:
+         services = attrs["srvs"]
+    except KeyError:
+         services = ["OMNI"]
 
     if (libauthn.verify_authn(ttype + ":" + token, authn_cert) == False):
         return qstr 
