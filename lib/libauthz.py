@@ -39,11 +39,7 @@ def assert_authz(qstr, authn_cert, authz_keypem = None):
 
     token = attrs["token_val"][0]
 
-    logger.info("token before decode: %s", token)
-
     token = libauthn.base64url_decode(token)
-
-    logger.info("token after decode: %s", token)
 
     try:
          services = attrs["srvs"]
@@ -61,9 +57,7 @@ def assert_authz(qstr, authn_cert, authz_keypem = None):
 
     authz_tokens = ""
 
-    for i in range(0, len(services)):
-
-        srvs = services[i]
+    for srvs in services :
 
         stkn = token + "&sv=" + srvs 
 
@@ -71,8 +65,8 @@ def assert_authz(qstr, authn_cert, authz_keypem = None):
 
         logger.info("roles for %s %s: %s", subject, srvs, roles)
      
-        for i in range(0, len(roles)):
-            stkn += "&role=" + roles[i]
+        for role in roles:
+            stkn += "&role=" + role
 
         sig = libauthn.hash_n_sign(stkn, "sha1", authz_keypem) 
 
