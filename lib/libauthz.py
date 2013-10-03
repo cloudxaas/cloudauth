@@ -56,8 +56,8 @@ def assert_authz_jwt(token, services, authn_cert, authz_keypem):
 
     hdr, bdy, sig = token.split(".", 2)
 
-    hdr = libauthn.base64url_decode(hdr)
-    bdy = libauthn.base64url_decode(bdy)
+    hdr = libauthn.base64url_decode(hdr).strip()
+    bdy = libauthn.base64url_decode(bdy).strip()
 
     logger.info("hdr=%s", hdr)
     logger.info("bdy=%s", bdy)
@@ -70,8 +70,8 @@ def assert_authz_jwt(token, services, authn_cert, authz_keypem):
     authz_tokens = ""
 
     for srvs in services :
-    
-        bd = bdy.rstrip("}")
+   
+        bd = bdy[:-1] if bdy.endswith('}') else bdy 
 
         bd += ', "sv":"' + srvs + '"' 
   
@@ -80,13 +80,14 @@ def assert_authz_jwt(token, services, authn_cert, authz_keypem):
         logger.info("roles for %s %s: %s", subject, srvs, roles)
  
         if (len(roles) > 0): 
-            bd += ', "rl" : [' + roles[0] + '"'
+            bd += ', "rl" : ["' + roles[0] + '"'
  
         for i in range(1, len(roles)):
             bd += ', "' + roles[i] + '"'
 
         bd += "]}"
 
+        bd = json.loads(bd)
         bd = json.dumps(bd)
 
         logger.info("body=%s", bd)
