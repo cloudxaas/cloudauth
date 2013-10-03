@@ -20,26 +20,21 @@ from M2Crypto import EVP, EC, util
 
 logger = logging.getLogger("libauthz")
 
-def assert_authz(qstr, authn_cert, authz_keypem = None):
+def assert_authz(qstr, authn_cert, authz_keypem):
 
-    #qstr: token_type=qst&token_val=b64urlsafe&srvs=foo&srvs=bar
-    #qstr: token_type=jmt&token_val=jmt-token&srvs=foo&srvs=bar
+    #qstr: token_type=authn_qst&token_val=b64urlsafe&srvs=foo&srvs=bar
+    #qstr: token_type=authn_jmt&token_val=jmt-token&srvs=foo&srvs=bar
 
     logger.info(qstr)
 
     attrs = urlparse.parse_qs(qstr)
 
-    #base64url_decode
-
     ttype = attrs["token_type"][0]
-
-    if (ttype != "authn_qst"):
-        logger.error("unsupported authn token: %s", qstr)
-        return qstr
 
     token = attrs["token_val"][0]
 
-    token = libauthn.base64url_decode(token)
+    if (ttype == "authn_qst"):
+        token = libauthn.base64url_decode(token)
 
     try:
          services = attrs["srvs"]
@@ -48,6 +43,19 @@ def assert_authz(qstr, authn_cert, authz_keypem = None):
 
     if (libauthn.verify_authn(ttype + ":" + token, authn_cert) == False):
         return qstr 
+
+    if (ttype == "authn_qst"):
+        return assert_authz_qst(token, services, authn_cert, authz_keypem)
+    elif (ttype == "authn_jwt"):
+        return assert_authz_jwt(token, services, authn_cert, authz_keypem)
+    else:
+        logger.error("unsupported authn token: %s", qstr)
+        return qstr
+
+def assert_authz_jwt(token, services, authn_cert, authz_keypem):
+    pass
+
+def assert_authz_qst(token, services, authn_cert, authz_keypem):
 
     token = token[0:token.find("&h=")] #strip of authn sig
 
