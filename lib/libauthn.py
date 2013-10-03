@@ -243,6 +243,22 @@ def assert_authn_qst(proc, keypem, ctx = SUBJECT_AUTH, validity=300, challenge=N
     logger.info(ret)
 
     return ret
+
+def qsb2qst(token, type = "authn") :
+
+    data, sign = token.split(".", 1)
+
+    data = base64url_decode(data)
+
+    return data + "&h=" + sign
+
+def qst2qsb(token, type = "authn") :
+
+    data, sign = token.split("&h=", 1)
+
+    data = base64.urlsafe_b64encode(data).rstrip("=")
+
+    return data + "." + sign
  
 def assert_authn(proc, keypem, qstr, body) :
 
@@ -272,6 +288,9 @@ def assert_authn(proc, keypem, qstr, body) :
 
     if (tkn_type == "qst"):
         token = assert_authn_qst(proc, keypem, ctx, validity, challenge)
+    elif (tkn_type == "qsb"):
+        token = assert_authn_qst(proc, keypem, ctx, validity, challenge)
+        token = "authn_qsb:" + qst2qsb(token.strip("authn_qst:"))
     elif (tkn_type == "jwt"):
         token = assert_authn_jwt(proc, keypem, ctx, validity, challenge)
     else:
@@ -284,6 +303,9 @@ def askfor_authz(authn, certpem, idpurl, qstr, body):
     if (authn.startswith("authn_qst:")):
         idpurl += "?token_type=authn_qst"
         idpurl += "&token_val=" + base64.urlsafe_b64encode(authn[len("authn_qst:"):]).rstrip("=")
+    elif (authn.startswith("authn_qsb:")):
+        idpurl += "?token_type=authn_qsb"
+        idpurl += "&token_val=" + authn[len("authn_qsb:"):]
     elif (authn.startswith("authn_jwt:")):
         idpurl += "?token_type=authn_jwt"
         idpurl += "&token_val=" + authn[len("authn_jwt:"):]

@@ -46,6 +46,19 @@ def assert_authz(qstr, authn_cert, authz_keypem):
 
     if (ttype == "authn_qst"):
         return assert_authz_qst(token, services, authn_cert, authz_keypem)
+    elif (ttype == "authn_qsb"):
+        token = libauthn.qsb2qst(token)
+        token = assert_authz_qst(token, services, authn_cert, authz_keypem)
+   
+        btkns = ""
+
+        tkns = token.split("\r\n")
+        for token in tkns :
+            if (token == None or len(token.strip()) <= 0): break
+            btkns += "authz_qsb:" + libauthn.qst2qsb(token.lstrip("authz_qst:"), "authz") + "\r\n"
+
+        return btkns
+
     elif (ttype == "authn_jwt"):
         return assert_authz_jwt(token, services, authn_cert, authz_keypem)
     else:
