@@ -62,33 +62,40 @@ def assert_authz_jwt(token, services, authn_cert, authz_keypem):
     logger.info("hdr=%s", hdr)
     logger.info("bdy=%s", bdy)
 
-    hdr = json.loads(hdr)
-    bdy = json.loads(bdy)
+    hdr_obj = json.loads(hdr)
+    bdy_obj = json.loads(bdy)
 
-    subject = bdy["s"]
+    subject = bdy_obj["s"]
  
     authz_tokens = ""
 
     for srvs in services :
     
-        bd = bdy
+        bd = bdy.rstrip("}")
 
-        bd["sv"] = srvs 
+        bd += ', "sv":"' + srvs + '"' 
   
-        logger.info("body=%s", json.dumps(bd))
- 
         roles = assert_roles(subject, srvs)
 
         logger.info("roles for %s %s: %s", subject, srvs, roles)
-    
-        #TODO
+ 
+        if (len(roles) > 0): 
+            bd += ', "rl" : [' + roles[0] + '"'
+ 
+        for i in range(1, len(roles)):
+            bd += ', "' + roles[i] + '"'
 
-        for role in roles:
-            pass 
+        bd += "]}"
+
+        bd = json.dumps(bd)
+
+        logger.info("body=%s", bd)
+
+        stkn = base64.urlsafe_b64encode(json.dumps(hdr)) + "." + base64.urlsafe_b64encode(bd).rstrip("=")
 
         sig = libauthn.hash_n_sign(stkn, "sha1", authz_keypem) 
 
-        stkn = "authz_qst:" + stkn + "&h=" + base64.urlsafe_b64encode(sig).rstrip("=")
+        stkn = "authz_jwt:" + stkn + "." + base64.urlsafe_b64encode(sig).rstrip("=")
 
         authz_tokens += stkn + "\r\n"        
 
@@ -115,7 +122,7 @@ def assert_authz_qst(token, services, authn_cert, authz_keypem):
         logger.info("roles for %s %s: %s", subject, srvs, roles)
      
         for role in roles:
-            stkn += "&role=" + role
+            stkn += "&rl=" + role
 
         sig = libauthn.hash_n_sign(stkn, "sha1", authz_keypem) 
 
