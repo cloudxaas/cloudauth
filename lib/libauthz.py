@@ -53,7 +53,48 @@ def assert_authz(qstr, authn_cert, authz_keypem):
         return qstr
 
 def assert_authz_jwt(token, services, authn_cert, authz_keypem):
-    pass
+
+    hdr, bdy, sig = token.split(".", 2)
+
+    hdr = libauthn.base64url_decode(hdr)
+    bdy = libauthn.base64url_decode(bdy)
+
+    logger.info("hdr=%s", hdr)
+    logger.info("bdy=%s", bdy)
+
+    hdr = json.loads(hdr)
+    bdy = json.loads(bdy)
+
+    subject = bdy["s"]
+ 
+    authz_tokens = ""
+
+    for srvs in services :
+    
+        bd = bdy
+
+        bd["sv"] = srvs 
+  
+        logger.info("body=%s", json.dumps(bd))
+ 
+        roles = assert_roles(subject, srvs)
+
+        logger.info("roles for %s %s: %s", subject, srvs, roles)
+    
+        #TODO
+
+        for role in roles:
+            pass 
+
+        sig = libauthn.hash_n_sign(stkn, "sha1", authz_keypem) 
+
+        stkn = "authz_qst:" + stkn + "&h=" + base64.urlsafe_b64encode(sig).rstrip("=")
+
+        authz_tokens += stkn + "\r\n"        
+
+    logger.info(authz_tokens)
+
+    return authz_tokens 
 
 def assert_authz_qst(token, services, authn_cert, authz_keypem):
 

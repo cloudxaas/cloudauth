@@ -284,9 +284,9 @@ def askfor_authz(authn, certpem, idpurl, qstr, body):
     if (authn.startswith("authn_qst:")):
         idpurl += "?token_type=authn_qst"
         idpurl += "&token_val=" + base64.urlsafe_b64encode(authn[len("authn_qst:"):]).rstrip("=")
-    elif (authn.startswith("authn_jmt:")):
-        idpurl += "?token_type=authn_jmt"
-        idpurl += "&token_val=" + authn[len("authn_jmt:"):]
+    elif (authn.startswith("authn_jwt:")):
+        idpurl += "?token_type=authn_jwt"
+        idpurl += "&token_val=" + authn[len("authn_jwt:"):]
     else:
         logger.info("unsupported authn token %s", authn)
         return authn
