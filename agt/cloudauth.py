@@ -52,6 +52,7 @@ class CloudAuthHTTPReqHandler(SimpleHTTPRequestHandler):
         body = self.req_body();
 
         if (self.path.startswith("/authn")) :
+            # /authn?ttype=qst
 
             proc = self.peer_proc()
 
@@ -62,7 +63,7 @@ class CloudAuthHTTPReqHandler(SimpleHTTPRequestHandler):
             self.connection.send(httphd + authn)
 
         elif (self.path.startswith("/authz")) :
-            # /authz?srvs=foo
+            # /authz?ttype=qst&srvs=foo
             proc = self.peer_proc()
 
             authn = libauthn.assert_authn(proc, libauthn.file2buf(SIG_KEY_FILE), qstr, body)
@@ -76,6 +77,7 @@ class CloudAuthHTTPReqHandler(SimpleHTTPRequestHandler):
             self.connection.send(httphd + authz)
         
         elif (self.path.startswith("/cert")) :
+            # /cert?subj=hostname
 
             cert = libauthn.file2buf(SIG_CRT_FILE)  
 
@@ -88,7 +90,7 @@ class CloudAuthHTTPReqHandler(SimpleHTTPRequestHandler):
             pass
 
         elif (self.path.startswith("/roles")) :
-            # /roles?token_type=authn_qst&<token>&srvs=foo
+            # /roles?ttype=qst&<token>&srvs=foo
             # body is client/host cert for authn verification
             authz = libauthz.assert_authz(qstr, body, libauthn.file2buf(AuZ_KEY_FILE))
 

@@ -22,18 +22,18 @@ logger = logging.getLogger("libauthz")
 
 def assert_authz(qstr, authn_cert, authz_keypem):
 
-    #qstr: token_type=authn_qst&token_val=b64urlsafe&srvs=foo&srvs=bar
-    #qstr: token_type=authn_jmt&token_val=jmt-token&srvs=foo&srvs=bar
+    #qstr: ttype=qst&tval=b64urlsafe&srvs=foo&srvs=bar
+    #qstr: ttype=jmt&tval=jmt-token&srvs=foo&srvs=bar
 
     logger.info(qstr)
 
     attrs = urlparse.parse_qs(qstr)
 
-    ttype = attrs["token_type"][0]
+    ttype = attrs["ttype"][0]
 
-    token = attrs["token_val"][0]
+    token = attrs["tval"][0]
 
-    if (ttype == "authn_qst"):
+    if (ttype == "qst"):
         token = libauthn.base64url_decode(token)
 
     try:
@@ -41,25 +41,29 @@ def assert_authz(qstr, authn_cert, authz_keypem):
     except KeyError:
          services = ["OMNI"]
 
-    if (libauthn.verify_authn(ttype + ":" + token, authn_cert) == False):
+    if (libauthn.verify_authn(ttype, token, authn_cert) == False):
         return qstr 
 
-    if (ttype == "authn_qst"):
+    if (ttype == "qst"):
+
         return assert_authz_qst(token, services, authn_cert, authz_keypem)
-    elif (ttype == "authn_qsb"):
+
+    elif (ttype == "qsb"):
+
         token = libauthn.qsb2qst(token)
         token = assert_authz_qst(token, services, authn_cert, authz_keypem)
    
         btkns = ""
 
         tkns = token.split("\r\n")
+
         for token in tkns :
             if (token == None or len(token.strip()) <= 0): break
-            btkns += "authz_qsb:" + libauthn.qst2qsb(token.lstrip("authz_qst:"), "authz") + "\r\n"
+            btkns += libauthn.qst2qsb(token, "authz") + "\r\n"
 
         return btkns
 
-    elif (ttype == "authn_jwt"):
+    elif (ttype == "jwt"):
         return assert_authz_jwt(token, services, authn_cert, authz_keypem)
     else:
         logger.error("unsupported authn token: %s", qstr)
@@ -109,7 +113,7 @@ def assert_authz_jwt(token, services, authn_cert, authz_keypem):
 
         sig = libauthn.hash_n_sign(stkn, "sha1", authz_keypem) 
 
-        stkn = "authz_jwt:" + stkn + "." + base64.urlsafe_b64encode(sig).rstrip("=")
+        stkn = stkn + "." + base64.urlsafe_b64encode(sig).rstrip("=")
 
         authz_tokens += stkn + "\r\n"        
 
@@ -140,7 +144,7 @@ def assert_authz_qst(token, services, authn_cert, authz_keypem):
 
         sig = libauthn.hash_n_sign(stkn, "sha1", authz_keypem) 
 
-        stkn = "authz_qst:" + stkn + "&h=" + base64.urlsafe_b64encode(sig).rstrip("=")
+        stkn = stkn + "&h=" + base64.urlsafe_b64encode(sig).rstrip("=")
 
         authz_tokens += stkn + "\r\n"        
 

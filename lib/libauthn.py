@@ -82,9 +82,9 @@ def sig_verify(data, sig, hash_algo, pkey) :
 
     return pubk.verify_dsa_asn1(hash, sig)
 
-def verify_authn(authn, certpem):
+def verify_authn(ttype, authn, certpem):
 
-    logger.info("<%s>", certpem)
+    #logger.info("<%s>", certpem)
 
     x509 = X509.load_cert_string(certpem)
 
@@ -94,13 +94,11 @@ def verify_authn(authn, certpem):
 
     pkey = x509.get_pubkey() #EVP.PKEY
  
-    return verify_authn_pkey(authn, pkey)
+    return verify_authn_pkey(ttype, authn, pkey)
 
-def verify_authn_pkey(authn, pkey):
+def verify_authn_pkey(ttype, authn, pkey):
 
-    if (authn.startswith("authn_qst:")):
-    
-        authn = authn.lstrip("authn_qst:")
+    if (ttype == "qst"):
    
         token = authn[0:authn.rfind("&h=")]
      
@@ -142,10 +140,8 @@ def verify_authn_pkey(authn, pkey):
             logger.info("verification fail: %s", attrs["s"][0])
             return False 
              
-    elif (authn.startswith("authn_jwt:")):
+    elif (ttype == "jwt"):
         
-        authn = authn.lstrip("authn_jwt:")
-
         head, body, sign = authn.split(".", 2)
 
         sign = base64url_decode(sign)
@@ -211,7 +207,7 @@ def assert_authn_jwt(proc, keypem, ctx = SUBJECT_AUTH, validity=300, challenge=N
 
     sig = hash_n_sign(pkt, "sha256", keypem) 
     
-    ret = "authn_jwt:" + pkt + "." + base64.urlsafe_b64encode(sig).rstrip("=")
+    ret = pkt + "." + base64.urlsafe_b64encode(sig).rstrip("=")
 
     logger.info(ret)
 
@@ -238,7 +234,7 @@ def assert_authn_qst(proc, keypem, ctx = SUBJECT_AUTH, validity=300, challenge=N
  
     sig = hash_n_sign(m, "sha1", keypem) 
     
-    ret = "authn_qst:" + m + "&h=" + base64.urlsafe_b64encode(sig).rstrip("=")
+    ret = m + "&h=" + base64.urlsafe_b64encode(sig).rstrip("=")
 
     logger.info(ret)
 
@@ -265,12 +261,12 @@ def assert_authn(proc, keypem, qstr, body) :
     attrs = urlparse.parse_qs(qstr)
 
     try:
-        tkn_type = attrs["token_type"][0]
+        tkn_type = attrs["ttype"][0]
     except KeyError:
         tkn_type = "qst"
 
     try:
-        ctx = attrs["authn_type"][0]
+        ctx = attrs["atype"][0]
         ctx = int(ctx)
     except KeyError:
         ctx = SUBJECT_AUTH
@@ -290,7 +286,7 @@ def assert_authn(proc, keypem, qstr, body) :
         token = assert_authn_qst(proc, keypem, ctx, validity, challenge)
     elif (tkn_type == "qsb"):
         token = assert_authn_qst(proc, keypem, ctx, validity, challenge)
-        token = "authn_qsb:" + qst2qsb(token.strip("authn_qst:"))
+        token = qst2qsb(token)
     elif (tkn_type == "jwt"):
         token = assert_authn_jwt(proc, keypem, ctx, validity, challenge)
     else:
@@ -300,15 +296,17 @@ def assert_authn(proc, keypem, qstr, body) :
 
 def askfor_authz(authn, certpem, idpurl, qstr, body):
 
-    if (authn.startswith("authn_qst:")):
-        idpurl += "?token_type=authn_qst"
-        idpurl += "&token_val=" + base64.urlsafe_b64encode(authn[len("authn_qst:"):]).rstrip("=")
-    elif (authn.startswith("authn_qsb:")):
-        idpurl += "?token_type=authn_qsb"
-        idpurl += "&token_val=" + authn[len("authn_qsb:"):]
-    elif (authn.startswith("authn_jwt:")):
-        idpurl += "?token_type=authn_jwt"
-        idpurl += "&token_val=" + authn[len("authn_jwt:"):]
+    logger.info("askfor_az: %s",qstr)
+
+    if (qstr.startswith("ttype=qst")):
+        idpurl += "?ttype=qst"
+        idpurl += "&tval=" + base64.urlsafe_b64encode(authn).rstrip("=")
+    elif (qstr.startswith("ttype=qsb")):
+        idpurl += "?ttype=qsb"
+        idpurl += "&tval=" + authn
+    elif (qstr.startswith("ttype=jwt")):
+        idpurl += "?ttype=jwt"
+        idpurl += "&tval=" + authn
     else:
         logger.info("unsupported authn token %s", authn)
         return authn
