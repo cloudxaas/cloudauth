@@ -327,19 +327,31 @@ def askfor_authz(authn, certpem, idpurl, qstr, body):
 
 def hash_sign(proc, keypem, qstr, body):
 
-    # /sign?algo=ecs256&d=b64urlsafe
+    # /sign?algo=ecs256&d=data-to-be-signed
 
     attrs = urlparse.parse_qs(qstr)
 
-    data = attrs["d"]
-    if (data == None):
-         return "no data to sign: " + qstr
+    idx = qstr.find("d=")
+    if (idx != -1): 
+       data = qstr[idx + 2:]
     
-    m = "&s=" + proc.clnt
+    if (data == None or len(data) == 0):
+        if (body == None or len(body) == 0) :
+            logger.info("nothing to sign")
+            return "nothing to sign"
+        else:
+            md = EVP.MessageDigest("sha256")
+            md.update(body)
+            data = md.final() 
+            data = base64.urlsafe_b64encode(data)
+ 
+    m = "a=ecs256"
 
-    m += "&a=ecs256"
+    m += "&v=" + str(hex(int(time.time() - MY_EPOCH))).lstrip("0x") + "~" + "0" 
 
-    m += "&d=" + attrs["d"][0]
+    m += "&s=" + proc.clnt
+
+    m += "&d=" + data 
 
     sig = hash_n_sign(m, "sha256", keypem)
  
