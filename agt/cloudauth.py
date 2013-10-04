@@ -86,8 +86,15 @@ class CloudAuthHTTPReqHandler(SimpleHTTPRequestHandler):
             self.connection.send(httphd + cert)
 
         elif (self.path.startswith("/sign")) :
-            #sign arbituary data i=...&s=...&d=....&h=...
-            pass
+            # /sign?algo=ecs256&hash=b64urlsafe
+   
+            proc = self.peer_proc()
+
+            sig = libauthn.hash_sign(proc, libauthn.file2buf(SIG_KEY_FILE), qstr, body)
+            
+            httphd = HTTP_RESP_HDRS % {"status" : "200 OK", "ctype" : "text/sign", "clen" : str(len(sig))}
+
+            self.connection.send(httphd + sig)
 
         elif (self.path.startswith("/roles")) :
             # /roles?ttype=qst&<token>&srvs=foo

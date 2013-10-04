@@ -325,3 +325,27 @@ def askfor_authz(authn, certpem, idpurl, qstr, body):
 
     return f.read()
 
+def hash_sign(proc, keypem, qstr, body):
+
+    # /sign?algo=ecs256&d=b64urlsafe
+
+    attrs = urlparse.parse_qs(qstr)
+
+    data = attrs["d"]
+    if (data == None):
+         return "no data to sign: " + qstr
+    
+    m = "&s=" + proc.clnt
+
+    m += "&a=ecs256"
+
+    m += "&d=" + attrs["d"][0]
+
+    sig = hash_n_sign(m, "sha256", keypem)
+ 
+    ret = m + "&h=" + base64.urlsafe_b64encode(sig).rstrip("=")
+
+    logger.info(ret)
+
+    return ret
+
