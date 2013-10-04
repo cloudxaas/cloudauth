@@ -33,11 +33,13 @@ AuZ_KEY_FILE = "cnf/ssh_host_ecdsa_key"
 TLS_KEY_FILE = "cnf/ssh_host_ecdsa_key"
 TLS_CRT_FILE = "cnf/ssh_host_ecdsa_key.crt"
 
-HTTP_RESP_HDRS = "HTTP/1.0 %(status)s\r\nContent-type:%(ctype)s\r\nContent-length:%(clen)s\r\n\r\n"
+HTTP_RESP_HDRS = "HTTP/1.1 %(status)s\r\nContent-type:%(ctype)s\r\nContent-length:%(clen)s\r\n\r\n"
 
 logger = logging.getLogger("authagent")
 
 class CloudAuthHTTPReqHandler(SimpleHTTPRequestHandler):
+
+    protocol_version = "HTTP/1.1"
 
     is_inet = True
     is_post = True
@@ -72,10 +74,21 @@ class CloudAuthHTTPReqHandler(SimpleHTTPRequestHandler):
  
             authz = libauthn.askfor_authz(authn, cert, IDP_SRVR_URL, qstr, body)
 
-            httphd = HTTP_RESP_HDRS % {"status" : "200 OK", "ctype" : "text/authz", "clen" : str(len(authz))}
+            logger.info("start sending http resp for %s", self.path)
 
-            self.connection.send(httphd + authz)
-        
+            self.send_response(200)
+
+            self.send_header('Content-Type','text/authz')
+            self.send_header('Content-Length', str(len(authz)))
+
+            self.end_headers()
+ 
+            self.wfile.write(authz)
+       
+            self.wfile.flush()
+ 
+            logger.info("done sending http resp for %s", self.path)
+
         elif (self.path.startswith("/cert")) :
             # /cert?subj=hostname
 
@@ -101,9 +114,20 @@ class CloudAuthHTTPReqHandler(SimpleHTTPRequestHandler):
             # body is client/host cert for authn verification
             authz = libauthz.assert_authz(qstr, body, libauthn.file2buf(AuZ_KEY_FILE))
 
-            httphd = HTTP_RESP_HDRS % {"status" : "200 OK", "ctype" : "text/authz", "clen" : str(len(authz))}
+            logger.info("start sending http resp for %s", self.path)
 
-            self.connection.send(httphd + authz)
+            self.send_response(200)
+
+            self.send_header('Content-Type','text/authz')
+            self.send_header('Content-Length', str(len(authz)))
+
+            self.end_headers()
+ 
+            self.wfile.write(authz)
+       
+            self.wfile.flush()
+
+            logger.info("done sending http resp for %s", self.path)
 
     def peer_proc(self):
 
