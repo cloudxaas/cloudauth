@@ -33,9 +33,12 @@ class UHTTPConnection(httplib.HTTPConnection):
         sock.connect(self.path)
         self.sock = sock
 
-def assert_authnz():
+def assert_authnz(path):
 
-    conn = UHTTPConnection(LOCAL_PATH)
+    if (path.startswith("https://")): 
+        conn = httplib.HTTPSConnection(path.lstrip("https://"))
+    else :
+       conn = UHTTPConnection(path)
 
     conn.request("GET", "/authz?ttype=qst&srvs=az&srvs=jz")
 
@@ -59,7 +62,8 @@ def main():
 
     logging.basicConfig(format='%(asctime)s %(levelname)s %(name)s %(message)s', level=logging.INFO) 
 
-    assert_authnz()
+    assert_authnz(LOCAL_PATH)
+    assert_authnz("https://localhost:6443")
 
 if __name__ == "__main__":
     
