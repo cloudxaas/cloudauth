@@ -44,6 +44,19 @@ class CloudAuthHTTPReqHandler(SimpleHTTPRequestHandler):
     is_inet = True
     is_post = True
 
+    def respond(self, status, ctype, clen, data) :
+
+        self.send_response(status)
+
+        self.send_header('Content-Type', ctype)
+        self.send_header('Content-Length', clen)
+
+        self.end_headers()
+
+        self.wfile.write(data)
+
+        self.wfile.flush()
+
     def service(self):
 
         #TODO request body processing
@@ -60,9 +73,7 @@ class CloudAuthHTTPReqHandler(SimpleHTTPRequestHandler):
 
             authn = libauthn.assert_authn(proc, libauthn.file2buf(SIG_KEY_FILE), qstr, body)
             
-            httphd = HTTP_RESP_HDRS % {"status" : "200 OK", "ctype" : "text/authn", "clen" : str(len(authn))}
-
-            self.connection.send(httphd + authn)
+            self.respond(200, "text/authn", str(len(authn)), authn)
 
         elif (self.path.startswith("/authz")) :
             # /authz?ttype=qst&srvs=foo
@@ -74,29 +85,14 @@ class CloudAuthHTTPReqHandler(SimpleHTTPRequestHandler):
  
             authz = libauthn.askfor_authz(authn, cert, IDP_SRVR_URL, qstr, body)
 
-            logger.info("start sending http resp for %s", self.path)
-
-            self.send_response(200)
-
-            self.send_header('Content-Type','text/authz')
-            self.send_header('Content-Length', str(len(authz)))
-
-            self.end_headers()
- 
-            self.wfile.write(authz)
-       
-            self.wfile.flush()
- 
-            logger.info("done sending http resp for %s", self.path)
+            self.respond(200, "text/authz", str(len(authz)), authz)
 
         elif (self.path.startswith("/cert")) :
             # /cert?subj=hostname
 
             cert = libauthn.file2buf(SIG_CRT_FILE)  
 
-            httphd = HTTP_RESP_HDRS % {"status" : "200 OK", "ctype" : "text/cert", "clen" : str(len(cert))}
-
-            self.connection.send(httphd + cert)
+            self.respond(200, "text/cert", str(len(cert)), cert)
 
         elif (self.path.startswith("/sign")) :
             # /sign?algo=ecs256&hash=b64urlsafe
@@ -105,29 +101,14 @@ class CloudAuthHTTPReqHandler(SimpleHTTPRequestHandler):
 
             sig = libauthn.hash_sign(proc, libauthn.file2buf(SIG_KEY_FILE), qstr, body)
             
-            httphd = HTTP_RESP_HDRS % {"status" : "200 OK", "ctype" : "text/sign", "clen" : str(len(sig))}
-
-            self.connection.send(httphd + sig)
+            self.respond(200, "text/sign", str(len(sig)), sig)
 
         elif (self.path.startswith("/roles")) :
             # /roles?ttype=qst&<token>&srvs=foo
             # body is client/host cert for authn verification
             authz = libauthz.assert_authz(qstr, body, libauthn.file2buf(AuZ_KEY_FILE))
 
-            logger.info("start sending http resp for %s", self.path)
-
-            self.send_response(200)
-
-            self.send_header('Content-Type','text/authz')
-            self.send_header('Content-Length', str(len(authz)))
-
-            self.end_headers()
- 
-            self.wfile.write(authz)
-       
-            self.wfile.flush()
-
-            logger.info("done sending http resp for %s", self.path)
+            self.respond(200, "text/authz-roles", str(len(authz)), authz)
 
     def peer_proc(self):
 
