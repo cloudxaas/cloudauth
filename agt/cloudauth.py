@@ -5,6 +5,7 @@ Running on local host, listening on https over tcp and http over unix domain soc
 for authentication assertions and secure temporary storage of authorization assertions
 """
 import os
+import sys 
 import struct
 import socket
 import SocketServer
@@ -44,6 +45,14 @@ class CloudAuthHTTPReqHandler(SimpleHTTPRequestHandler):
     is_inet = True
     is_post = True
 
+    def log_message(self, format, *args):
+        pass
+        """
+        sys.stderr.write("%s - - [%s] %s\n" %
+                         (self.client_address[0],
+                          self.log_date_time_string(),
+                          format%args))
+        """
     def respond(self, status, ctype, clen, data) :
 
         self.send_response(status)
