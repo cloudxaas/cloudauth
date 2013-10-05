@@ -48,6 +48,11 @@ class CloudAuthHTTPReqHandler(SimpleHTTPRequestHandler):
     def log_message(self, format, *args):
         pass
         """
+        #Instead of using self.client_address[0], 2.7.3 uses
+        #self.address_string(), which is not compatible with
+        #unix domain socket. 
+        #Commented it (working) out to supress server logging
+
         sys.stderr.write("%s - - [%s] %s\n" %
                          (self.client_address[0],
                           self.log_date_time_string(),
