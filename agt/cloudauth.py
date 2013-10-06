@@ -36,7 +36,7 @@ TLS_CRT_FILE = "cnf/ssh_host_ecdsa_key.crt"
 
 HTTP_RESP_HDRS = "HTTP/1.1 %(status)s\r\nContent-type:%(ctype)s\r\nContent-length:%(clen)s\r\n\r\n"
 
-logger = logging.getLogger("authagent")
+logger = logging.getLogger("cloudauth")
 
 class CloudAuthHTTPReqHandler(SimpleHTTPRequestHandler):
 
@@ -46,18 +46,14 @@ class CloudAuthHTTPReqHandler(SimpleHTTPRequestHandler):
     is_post = True
 
     def log_message(self, format, *args):
-        pass
-        """
+        
         #Instead of using self.client_address[0], 2.7.3 uses
         #self.address_string(), which is not compatible with
         #unix domain socket. 
-        #Commented it (working) out to supress server logging
+        #Commented it out to suppress http/s server logging.
 
-        sys.stderr.write("%s - - [%s] %s\n" %
-                         (self.client_address[0],
-                          self.log_date_time_string(),
-                          format%args))
-        """
+        logger.info("%s - %s" % (self.client_address[0], format%args))
+        
     def respond(self, status, ctype, clen, data) :
 
         self.send_response(status)

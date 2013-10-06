@@ -13,7 +13,7 @@ import time
 
 from socket import socket, AF_UNIX, SOCK_STREAM, SOL_SOCKET
 
-import httplib
+from httplib import HTTPConnection, HTTPSConnection
 
 logger = logging.getLogger("libclient")
 
@@ -21,10 +21,10 @@ LOCAL_PATH = tempfile.gettempdir() + "/cloudauth.sk"
 
 SO_PASSCRED = 16 # Pulled from /usr/include/asm-generic/socket.h
 
-class UHTTPConnection(httplib.HTTPConnection):
+class UHTTPConnection(HTTPConnection):
 
     def __init__(self, path):
-        httplib.HTTPConnection.__init__(self, 'localhost')
+        HTTPConnection.__init__(self, 'localhost')
         self.path = path
  
     def connect(self):
@@ -33,12 +33,7 @@ class UHTTPConnection(httplib.HTTPConnection):
         sock.connect(self.path)
         self.sock = sock
 
-def assert_authnz(path):
-
-    if (path.startswith("https://")): 
-        conn = httplib.HTTPSConnection(path.lstrip("https://"))
-    else :
-       conn = UHTTPConnection(path)
+def assert_authnz(conn):
 
     conn.request("GET", "/authz?ttype=qst&srvs=az&srvs=jz")
 
@@ -62,8 +57,8 @@ def main():
 
     logging.basicConfig(format='%(asctime)s %(levelname)s %(name)s %(message)s', level=logging.INFO) 
 
-    assert_authnz(LOCAL_PATH)
-    assert_authnz("https://localhost:6443")
+    assert_authnz(UHTTPConnection(LOCAL_PATH))
+    assert_authnz(HTTPSConnection("localhost:6443"))
 
 if __name__ == "__main__":
     
