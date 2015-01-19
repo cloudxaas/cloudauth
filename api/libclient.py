@@ -26,13 +26,13 @@ class UHTTPConnection(HTTPConnection):
     def __init__(self, path):
         HTTPConnection.__init__(self, 'localhost')
         self.path = path
- 
+        self.sock = None
+        
     def connect(self):
-        sock = socket(AF_UNIX, SOCK_STREAM)
-        sock.setsockopt(SOL_SOCKET, SO_PASSCRED, 1)
-        sock.connect(self.path)
-        self.sock = sock
-
+        self.sock = socket(AF_UNIX, SOCK_STREAM)
+        self.sock.setsockopt(SOL_SOCKET, SO_PASSCRED, 1)
+        self.sock.connect(self.path)
+        
 def assert_authnz(conn):
 
     conn.request("GET", "/authz?ttype=qst&srvs=az&srvs=jz")
