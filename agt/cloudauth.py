@@ -42,8 +42,10 @@ class CloudAuthHTTPReqHandler(SimpleHTTPRequestHandler):
 
     protocol_version = "HTTP/1.1"
 
-    is_inet = True
-    is_post = True
+    def __init__(self) :
+        
+        self.is_inet = True
+        self.is_post = True
 
     def log_message(self, format, *args):
         
